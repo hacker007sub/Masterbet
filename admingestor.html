@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EN1KSyNCkrY1sMe1nJa5t8r2q6+CrhXIZC4e4/x2wE0=' https://www.gstatic.com https://apis.google.com; frame-src https://*.firebaseapp.com https://*.googleapis.com https://accounts.google.com; style-src 'unsafe-inline'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com; img-src 'self' data:; base-uri 'none'; form-action 'none';" />
+  <title>Master Bet | Painel Admin</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #07090c; color: #f1f5f9; padding: 16px; }
+    h1 { font-size: 1.2rem; margin: 0 0 4px; } h2 { font-size: 1rem; margin: 22px 0 10px; color: #f59e0b; }
+    .muted { color: #64748b; font-size: .8rem; }
+    .card { background: #0e1218; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    .row { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .valor { font-size: 1.2rem; font-weight: 700; color: #10b981; }
+    button { border: 0; border-radius: 8px; padding: 9px 14px; font-weight: 700; cursor: pointer; color: #fff; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .ok { background: #10b981; } .no { background: #e11d48; }
+    .acts { display: flex; gap: 8px; margin-top: 10px; }
+    input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); background: #0e1218; color: #f1f5f9; font-size: 1rem; }
+    #msg { padding: 20px; text-align: center; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Painel Admin — Master Bet</h1>
+  <div class="muted" id="who">
+    <span id="who-text">A verificar acesso...</span>
+    <button id="logout" class="no hidden" style="padding:4px 10px; margin-left:8px;">Sair</button>
+  </div>
+  <div id="msg"></div>
+
+  <!-- Login do admin -->
+  <form id="login" class="hidden" style="max-width:340px; margin:30px auto;" autocomplete="off">
+    <div class="muted" style="margin-bottom:10px;">Entre com a conta de administrador</div>
+    <input id="a-phone" type="tel" inputmode="numeric" maxlength="9" pattern="[0-9]{9}" placeholder="Telemóvel (9 dígitos)" required>
+    <input id="a-pass" type="password" autocomplete="current-password" placeholder="Palavra-passe" required>
+    <button id="login-btn" class="ok" type="submit" style="width:100%;">Entrar</button>
+    <div class="muted" style="margin-top:14px; text-align:center;">
+      Ainda não tem conta? <a href="cadastro.html" style="color:#10b981;">Criar conta</a> (depois peça para definir como admin no Console)
+    </div>
+  </form>
+
+  <div id="panel" class="hidden">
+    <h2>Depósitos pendentes</h2><div id="dep-list"></div>
+    <h2>Levantamentos pendentes</h2><div id="wd-list"></div>
+  </div>
+
+  <script type="module">
+    /**
+     * MASTER BET — painel admin (ficheiro único)
+     * A segurança real está nas REGRAS DO FIRESTORE (firestore.rules).
+     * Este código só mostra/esconde a interface; nunca confie nele sozinho.
+     */
+    const $ = (id) => document.getElementById(id);
+    const show = (t) => { $('msg').textContent = t; };
+
+    // Diagnóstico visível no ecrã
+    window.addEventListener('error', (e) => show('Erro ao carregar: ' + (e.message || 'ficheiro não encontrado')));
+    window.addEventListener('unhandledrejection', (e) => show('Erro: ' + ((e.reason && (e.reason.code || e.reason.message)) || e.reason)));
+
+    const AUTH_URL = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    const FS_URL = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    (async () => {
+      const [{ auth, db }, A, F] = await Promise.all([import('./firebase.js'), import(AUTH_URL), import(FS_URL)]);
+      const { onAuthStateChanged, signInWithEmailAndPassword, signOut } = A;
+      const { doc, getDoc, collection, query, where, onSnapshot, runTransaction, increment, serverTimestamp } = F;
+
+      const fmt = (n) => Number(n || 0).toLocaleString('pt-PT', { minimumFractionDigits: 2 });
+      const METHOD = { mpesa: 'M-Pesa', emola: 'e-Mola' };
+      const IDLE_MS = 15 * 60 * 1000; // terminar sessão após 15 min parado
+
+      let adminUid = null;
+      let unsubs = [];
+      let idleTimer = null;
+
+      const stopWatching = () => { unsubs.forEach((u) => { try { u(); } catch (_) {} }); unsubs = []; };
+      const resetIdle = () => {
+        clearTimeout(idleTimer);
+        if (adminUid) idleTimer = setTimeout(() => { show('Sessão terminada por inatividade.'); signOut(auth); }, IDLE_MS);
+      };
+      ['click', 'keydown', 'touchstart', 'mousemove'].forEach((ev) => window.addEventListener(ev, resetIdle, { passive: true }));
+
+      function showLogin() {
+        $('who-text').textContent = '';
+        $('logout').classList.add('hidden');
+        $('panel').classList.add('hidden');
+        $('login').classList.remove('hidden');
+      }
+
+      onAuthStateChanged(auth, async (user) => {
+        stopWatching();
+        adminUid = null;
+        clearTimeout(idleTimer);
+        if (!user) { showLogin(); return; }
+
+        $('login').classList.add('hidden');
+        try {
+          const snap = await getDoc(doc(db, 'users', user.uid));
+          if (!snap.exists() || snap.data().tipo !== 'admin') {
+            // Sem permissão: não revela nada, termina a sessão
+            show('Esta conta não tem permissão de administrador.');
+            await signOut(auth);
+            return;
+          }
+          adminUid = user.uid;
+          $('who-text').textContent = 'Admin: ' + (snap.data().nome || 'conta') + ' ';
+          $('logout').classList.remove('hidden');
+          $('panel').classList.remove('hidden');
+          show('');
+          resetIdle();
+          watch('deposits', 'dep-list', 'deposit');
+          watch('withdrawals', 'wd-list', 'withdraw');
+        } catch (e) {
+          show('Erro: ' + (e.code || e.message));
+          await signOut(auth);
+        }
+      });
+
+      function watch(col, target, kind) {
+        const unsub = onSnapshot(
+          query(collection(db, col), where('estado', '==', 'pendente')),
+          (snap) => {
+            const box = $(target);
+            if (snap.empty) {
+              const p = document.createElement('div'); p.className = 'muted'; p.textContent = 'Nada pendente.';
+              box.replaceChildren(p); return;
+            }
+            box.replaceChildren(...snap.docs.map((d) => card(col, d.id, d.data(), kind)));
+          },
+          (e) => show('Erro ao ler ' + col + ': ' + e.code)
+        );
+        unsubs.push(unsub);
+      }
+
+      function card(col, id, data, kind) {
+        // Tudo via textContent: nunca innerHTML (evita XSS com dados dos jogadores)
+        const c = document.createElement('div'); c.className = 'card';
+        const top = document.createElement('div'); top.className = 'row';
+        const l = document.createElement('div');
+        l.textContent = `${data.nome || '(sem nome)'} · ${data.telefone || ''}`;
+        const v = document.createElement('div'); v.className = 'valor'; v.textContent = fmt(data.valor) + ' MZN';
+        top.append(l, v);
+
+        const info = document.createElement('div'); info.className = 'muted';
+        info.textContent = `${METHOD[data.metodo] || data.metodo}` +
+          (kind === 'deposit' ? ` · ID transação: ${id}` : '') +
+          ` · ${data.criadoEm?.toDate ? data.criadoEm.toDate().toLocaleString('pt-PT') : ''}`;
+
+        const acts = document.createElement('div'); acts.className = 'acts';
+        const ok = document.createElement('button'); ok.className = 'ok';
+        ok.textContent = kind === 'deposit' ? 'Aprovar (creditar)' : 'Marcar como pago';
+        const no = document.createElement('button'); no.className = 'no'; no.textContent = 'Rejeitar';
+        ok.addEventListener('click', () => decide(col, id, kind, true, ok, no));
+        no.addEventListener('click', () => decide(col, id, kind, false, ok, no));
+        acts.append(ok, no);
+
+        c.append(top, info);
+        if (data.sms) {
+          const sm = document.createElement('div'); sm.className = 'muted'; sm.style.marginTop = '6px';
+          sm.textContent = 'SMS colado: ' + String(data.sms).slice(0, 500);
+          c.append(sm);
+        }
+        c.append(acts);
+        return c;
+      }
+
+      async function decide(col, id, kind, approve, ...btns) {
+        if (!adminUid) return;
+        let motivo = '';
+        if (!approve) {
+          motivo = (prompt(kind === 'withdraw' ? 'Motivo da rejeição (o jogador vai ver). O valor será devolvido ao saldo:' : 'Motivo da rejeição (o jogador vai ver):') || '').trim().slice(0, 200);
+          if (!motivo) return;
+        }
+        if (approve && !confirm(kind === 'deposit'
+          ? 'Confirme que recebeu este valor e este ID no seu M-Pesa/e-Mola. Creditar saldo?'
+          : 'Confirme que já enviou o dinheiro ao jogador. Marcar como pago? (o saldo já foi descontado quando o jogador fez o pedido)')) return;
+
+        btns.forEach((b) => { b.disabled = true; });
+        try {
+          await runTransaction(db, async (tx) => {
+            const ref = doc(db, col, id);
+            const snap = await tx.get(ref);
+            if (!snap.exists() || snap.data().estado !== 'pendente') throw new Error('Este pedido já foi tratado.');
+            const d = snap.data();
+
+            if (!approve) {
+              if (kind === 'withdraw') {
+                // O saldo já foi descontado quando o jogador fez o pedido: devolve-o
+                if (typeof d.uid !== 'string' || !d.uid) throw new Error('Pedido inválido (sem jogador).');
+                if (typeof d.valor !== 'number' || !Number.isFinite(d.valor) || d.valor <= 0) throw new Error('Valor inválido.');
+                tx.update(doc(db, 'users', d.uid), { saldo: increment(d.valor) });
+              }
+              tx.update(ref, { estado: 'rejeitado', motivo, revisadoEm: serverTimestamp(), revisadoPor: adminUid });
+              return;
+            }
+
+            if (kind === 'withdraw') {
+              // Aprovar levantamento: o saldo já foi descontado no pedido, só marca como pago
+              tx.update(ref, { estado: 'pago', revisadoEm: serverTimestamp(), revisadoPor: adminUid });
+              return;
+            }
+
+            // Depósito: validações antes de creditar
+            if (typeof d.uid !== 'string' || !d.uid) throw new Error('Pedido inválido (sem jogador).');
+            if (typeof d.valor !== 'number' || !Number.isFinite(d.valor) || d.valor <= 0) throw new Error('Valor inválido.');
+            const uref = doc(db, 'users', d.uid);
+            const u = await tx.get(uref);
+            if (!u.exists()) throw new Error('Jogador não encontrado.');
+            tx.update(uref, { saldo: increment(d.valor) });
+            tx.update(ref, { estado: 'aprovado', revisadoEm: serverTimestamp(), revisadoPor: adminUid });
+          });
+        } catch (e) {
+          alert('Não foi possível concluir: ' + (e.message || e.code));
+          btns.forEach((b) => { b.disabled = false; });
+        }
+      }
+
+      // Login: mesmo e-mail interno do site (258 + número)
+      $('login').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        show('');
+        const phone = $('a-phone').value.trim();
+        if (!/^\d{9}$/.test(phone)) { show('Número inválido.'); return; }
+        const btn = $('login-btn'); btn.disabled = true;
+        try {
+          await signInWithEmailAndPassword(auth, `258${phone}@users.masterbet.example`, $('a-pass').value);
+        } catch (err) {
+          show(err.code === 'auth/too-many-requests'
+            ? 'Demasiadas tentativas. Aguarde alguns minutos.'
+            : 'Número ou senha incorretos.');
+        } finally {
+          $('a-pass').value = '';
+          btn.disabled = false;
+        }
+      });
+
+      $('logout').addEventListener('click', () => signOut(auth));
+    })().catch((e) => show('Erro ao iniciar: ' + (e.code || e.message || e)));
+  </script>
+</body>
+</html>

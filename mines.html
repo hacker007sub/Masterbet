@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Master Bet — Mines</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+/* ================================================================
+   MINES — Master Bet  |  Premium Dark Casino UI
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after {
+  margin: 0; padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --bg:          #06080c;
+  --bg2:         #0b0f17;
+  --bg3:         #10151f;
+  --bg4:         #161d2a;
+
+  --green:       #22c55e;
+  --green-glow:  rgba(34,197,94,0.35);
+  --green-dim:   rgba(34,197,94,0.1);
+
+  --gold:        #f59e0b;
+  --gold-glow:   rgba(245,158,11,0.4);
+  --gold-dim:    rgba(245,158,11,0.1);
+
+  --red:         #ef4444;
+  --red-glow:    rgba(239,68,68,0.4);
+  --red-dim:     rgba(239,68,68,0.1);
+
+  --blue:        #3b82f6;
+  --blue-dim:    rgba(59,130,246,0.1);
+
+  --text:        #f1f5f9;
+  --muted:       #64748b;
+  --dim:         #1e293b;
+
+  --border:      rgba(255,255,255,0.06);
+  --border2:     rgba(255,255,255,0.12);
+
+  --ease:        cubic-bezier(0.25,1,0.5,1);
+  --t:           0.3s var(--ease);
+  --r:           12px;
+  --r2:          16px;
+  --r3:          20px;
+}
+
+html, body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+#bg-canvas {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  opacity: 0.3;
+}
+
+/* ── ANIMAÇÕES ──────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(12px) }
+  to   { opacity:1; transform:translateY(0) }
+}
+@keyframes pulse-ring {
+  0%   { box-shadow:0 0 0 0 var(--green-glow) }
+  70%  { box-shadow:0 0 0 12px rgba(34,197,94,0) }
+  100% { box-shadow:0 0 0 0 rgba(34,197,94,0) }
+}
+@keyframes gem-pop {
+  0%   { transform:scale(0.5); opacity:0 }
+  60%  { transform:scale(1.2) }
+  100% { transform:scale(1);   opacity:1 }
+}
+@keyframes bomb-explode {
+  0%   { transform:scale(1) }
+  20%  { transform:scale(1.5) rotate(-5deg) }
+  40%  { transform:scale(0.9) rotate(5deg) }
+  60%  { transform:scale(1.2) }
+  100% { transform:scale(1) }
+}
+@keyframes shake {
+  0%,100% { transform:translateX(0) }
+  20%     { transform:translateX(-8px) }
+  40%     { transform:translateX(8px) }
+  60%     { transform:translateX(-5px) }
+  80%     { transform:translateX(5px) }
+}
+@keyframes mult-update {
+  0%   { transform:scale(1) }
+  50%  { transform:scale(1.1) }
+  100% { transform:scale(1) }
+}
+@keyframes glow-pulse  { 0%,100%{opacity:.75} 50%{opacity:1} }
+@keyframes toastIn  { from{opacity:0;transform:translateX(50px)} to{opacity:1;transform:translateX(0)} }
+@keyframes toastOut { to{opacity:0;transform:translateX(50px)} }
+@keyframes winPop {
+  0%   { transform:scale(0.6) rotate(-8deg); opacity:0 }
+  60%  { transform:scale(1.1) rotate(2deg) }
+  100% { transform:scale(1)   rotate(0);   opacity:1 }
+}
+@keyframes confetti-drop { to{transform:translateY(110vh) rotate(720deg);opacity:0} }
+
+/* ── OVERLAY ────────────────────────────────────────────────── */
+.menu-overlay {
+  position:fixed; inset:0;
+  background:rgba(4,5,7,0.88);
+  backdrop-filter:blur(10px);
+  opacity:0; visibility:hidden;
+  transition:var(--t); z-index:997;
+}
+.menu-overlay.active { opacity:1; visibility:visible }
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+.top-bar {
+  position:fixed; top:0; left:0; right:0; height:54px;
+  background:rgba(6,8,12,0.97);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border2);
+  display:flex; align-items:center; gap:10px;
+  padding:0 14px; z-index:1000;
+}
+.top-bar::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,transparent,var(--green),var(--gold),var(--green),transparent);
+  opacity:0.7;
+}
+.back-btn {
+  width:32px; height:32px; background:var(--bg3);
+  border:1px solid var(--border); border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--muted); text-decoration:none; font-size:0.82rem;
+  transition:var(--t); flex-shrink:0;
+}
+.back-btn:hover { color:var(--text); border-color:var(--border2) }
+.brand { display:flex; align-items:center; gap:8px; flex:1 }
+.brand-icon {
+  width:30px; height:30px;
+  background:linear-gradient(135deg,var(--red),#7f1d1d);
+  border-radius:8px; display:flex; align-items:center; justify-content:center;
+  font-size:0.85rem; color:#fff; box-shadow:0 4px 10px var(--red-glow);
+}
+.brand-name {
+  font-family:'Rajdhani',sans-serif; font-size:1.2rem; font-weight:700;
+  letter-spacing:2px; line-height:1;
+}
+.brand-sub { font-size:0.58rem; color:var(--muted); display:block; letter-spacing:.5px }
+.balance-pill {
+  display:flex; align-items:center; gap:5px;
+  background:rgba(34,197,94,0.06);
+  border:1px solid rgba(34,197,94,0.25);
+  padding:4px 9px 4px 10px; border-radius:20px;
+  font-size:0.8rem; font-weight:700; cursor:pointer; transition:var(--t); flex-shrink:0;
+}
+.balance-pill i   { color:var(--green); font-size:.75rem }
+.balance-pill small { color:var(--muted); font-size:.62rem }
+.balance-pill:hover { border-color:rgba(34,197,94,0.5) }
+.hamburger {
+  width:34px; height:34px; background:var(--bg3);
+  border:1px solid var(--border); border-radius:9px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  cursor:pointer; transition:var(--t); flex-shrink:0;
+}
+.hamburger span {
+  display:block; width:17px; height:2px;
+  background:var(--text); border-radius:2px; transition:var(--t);
+}
+.hamburger.open span:nth-child(1) { transform:translateY(6px) rotate(45deg) }
+.hamburger.open span:nth-child(2) { opacity:0; transform:scaleX(0) }
+.hamburger.open span:nth-child(3) { transform:translateY(-6px) rotate(-45deg) }
+
+/* ── SIDE MENU ──────────────────────────────────────────────── */
+.side-menu {
+  position:fixed; top:0; right:-300px; width:270px; height:100vh;
+  background:rgba(8,10,15,0.98); backdrop-filter:blur(20px);
+  border-left:1px solid var(--border2); z-index:999;
+  display:flex; flex-direction:column;
+  transition:right .4s cubic-bezier(0.2,1,0.2,1); overflow-y:auto;
+}
+.side-menu.active { right:0 }
+.side-menu-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:15px 16px; border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.side-brand { font-family:'Rajdhani',sans-serif; font-size:1.15rem; font-weight:600; color:var(--text) }
+.side-brand i { color:var(--red); margin-right:5px }
+.side-brand b { color:var(--red) }
+.close-btn {
+  width:28px; height:28px; background:var(--bg3); border:1px solid var(--border);
+  border-radius:7px; color:var(--muted);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:.8rem; transition:var(--t);
+}
+.close-btn:hover { color:var(--red); border-color:var(--red-dim) }
+.menu-options { list-style:none; padding:10px; flex:1 }
+.menu-options li a {
+  display:flex; align-items:center; gap:11px;
+  color:var(--muted); text-decoration:none; padding:10px 11px;
+  border-radius:var(--r); font-size:.86rem; font-weight:500; transition:var(--t);
+}
+.menu-options li a i  { width:15px; color:var(--green); font-size:.88rem }
+.menu-options li a:hover { background:var(--green-dim); color:var(--text) }
+.status-badge {
+  font-size:.62rem; font-weight:700; padding:2px 7px; border-radius:7px; margin-left:auto;
+}
+.status-badge.on  { background:var(--green-dim); color:var(--green) }
+.status-badge.off { background:var(--red-dim);   color:var(--red) }
+.side-footer {
+  padding:14px; text-align:center; font-size:.62rem; color:var(--dim);
+  border-top:1px solid var(--border);
+}
+
+/* ── BODY ───────────────────────────────────────────────────── */
+body { padding-top:54px }
+
+/* ── MAIN ───────────────────────────────────────────────────── */
+.mines-game {
+  position:relative; z-index:1;
+  max-width:520px; margin:0 auto;
+  padding:10px 12px 50px;
+}
+
+/* ── BARRA TOPO ─────────────────────────────────────────────── */
+.top-info-bar {
+  display:flex; align-items:center;
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  border-radius:var(--r2);
+  padding:8px 12px;
+  margin-bottom:8px;
+  animation:fadeUp .4s var(--ease) .05s both;
+  overflow:hidden; position:relative; gap:0;
+}
+.top-info-bar::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,var(--green),var(--gold),var(--green));
+  opacity:.4;
+}
+.info-stats {
+  display:flex; gap:8px; align-items:center; flex-shrink:0;
+}
+.is-item {
+  display:flex; align-items:center; gap:3px;
+  font-family:'Rajdhani',sans-serif; font-size:.9rem; font-weight:700;
+}
+.is-item i       { font-size:.65rem }
+.is-item.red   i { color:var(--red) }
+.is-item.gold  i { color:var(--gold) }
+.is-item.green i { color:var(--green) }
+.is-item.blue  i { color:var(--blue) }
+.tib-divider {
+  width:1px; background:var(--border2); align-self:stretch;
+  margin:0 10px; flex-shrink:0;
+}
+.info-mult {
+  display:flex; flex-direction:column; align-items:center; flex-shrink:0;
+}
+.im-label {
+  font-size:.5rem; color:var(--muted);
+  text-transform:uppercase; letter-spacing:1px;
+}
+.im-value {
+  font-family:'Rajdhani',sans-serif; font-size:1.35rem; font-weight:700;
+  color:var(--gold); text-shadow:0 0 12px var(--gold-glow); line-height:1;
+}
+.im-value small { font-size:.78rem }
+.im-profit {
+  font-size:.62rem; font-weight:700; color:var(--green);
+  font-family:'Rajdhani',sans-serif; line-height:1;
+}
+.im-profit.loss { color:var(--red) }
+.info-pf {
+  display:flex; align-items:center; gap:5px; flex:1; min-width:0;
+}
+.info-pf i { color:var(--green); font-size:.7rem; flex-shrink:0 }
+.hash-val {
+  font-family:monospace; font-size:.56rem; color:var(--green);
+  flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;
+}
+.verify-btn {
+  width:24px; height:24px; background:var(--green-dim);
+  border:1px solid rgba(34,197,94,.3); border-radius:6px;
+  color:var(--green); display:flex; align-items:center; justify-content:center;
+  font-size:.63rem; cursor:pointer; transition:var(--t); flex-shrink:0;
+}
+.verify-btn:hover { background:var(--green); color:#fff }
+
+/* ── TABULEIRO ──────────────────────────────────────────────── */
+.board-wrap {
+  margin-bottom:8px;
+  animation:fadeUp .4s var(--ease) .1s both;
+}
+.game-board {
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:5px;
+  padding:10px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--r3);
+}
+
+/* ── CÉLULAS: tamanho fixo reduzido ─────────────────────────── */
+.cell {
+  /* altura fixa de 52px — compacto mas confortável para toque */
+  width:100%;
+  height:52px;
+  background:linear-gradient(145deg,#1a2744,#0f1a32);
+  border:1.5px solid rgba(59,130,246,0.2);
+  border-radius:8px;
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1rem;
+  transition:all .2s var(--ease);
+  position:relative; overflow:hidden; user-select:none;
+}
+.cell::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.07),transparent);
+  pointer-events:none;
+}
+.cell-num {
+  position:absolute; top:2px; left:3px;
+  font-size:.42rem; font-weight:700;
+  color:rgba(255,255,255,.18); font-family:'Rajdhani',sans-serif;
+}
+.cell:hover:not(.revealed) {
+  transform:translateY(-2px) scale(1.04);
+  border-color:rgba(59,130,246,.6);
+  box-shadow:0 4px 12px rgba(59,130,246,.2);
+}
+.cell:active:not(.revealed) { transform:scale(.95) }
+.cell.revealed { cursor:default; pointer-events:none }
+.cell.safe {
+  background:linear-gradient(145deg,#14532d,#166534);
+  border-color:rgba(34,197,94,.6);
+  box-shadow:0 0 12px var(--green-glow);
+  animation:gem-pop .4s var(--ease);
+}
+.cell.safe i { color:var(--green); font-size:1rem; filter:drop-shadow(0 0 5px var(--green)) }
+.cell.mine {
+  background:linear-gradient(145deg,#7f1d1d,#450a0a);
+  border-color:rgba(239,68,68,.7);
+  box-shadow:0 0 20px var(--red-glow);
+  animation:bomb-explode .6s var(--ease);
+}
+.cell.mine i { color:var(--red); font-size:1rem; filter:drop-shadow(0 0 5px var(--red)) }
+.cell.mine-hidden {
+  background:linear-gradient(145deg,#3b0a0a,#1c0505);
+  border-color:rgba(239,68,68,.3); opacity:.7;
+}
+.cell.mine-hidden i { color:rgba(239,68,68,.5); font-size:.9rem }
+.game-board.shake { animation:shake .5s ease }
+
+/* ── PAINEL DE CONTROLO ─────────────────────────────────────── */
+.control-panel {
+  display:flex; flex-direction:column; gap:7px;
+  animation:fadeUp .4s var(--ease) .15s both;
+}
+.cp-row { display:flex; gap:7px; align-items:flex-start }
+
+/* Mines picker */
+.mines-picker {
+  display:flex; align-items:center; gap:7px;
+  background:var(--bg2); border:1.5px solid var(--border2);
+  border-radius:var(--r2); padding:9px 11px;
+  cursor:pointer; transition:var(--t); flex-shrink:0; min-width:86px;
+}
+.mines-picker:hover        { border-color:rgba(239,68,68,.5); background:var(--red-dim) }
+.mines-picker.open         { border-color:var(--red); box-shadow:0 0 0 3px var(--red-dim) }
+.mp-icon {
+  width:26px; height:26px; border-radius:7px; background:var(--red-dim);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.mp-icon i   { color:var(--red); font-size:.82rem }
+.mp-info     { display:flex; flex-direction:column; gap:1px; flex:1 }
+.mp-label    { font-size:.52rem; color:var(--muted); text-transform:uppercase; letter-spacing:.5px }
+.mp-val      { font-family:'Rajdhani',sans-serif; font-size:1.25rem; font-weight:700; color:var(--red); line-height:1 }
+.mp-arrow    { color:var(--muted); font-size:.62rem; transition:transform .3s var(--ease) }
+.mines-picker.open .mp-arrow { transform:rotate(180deg) }
+
+/* Bloco aposta */
+.bet-block  { flex:1; display:flex; flex-direction:column; gap:5px }
+.bet-top-row {
+  display:flex; align-items:center; gap:5px;
+  background:var(--bg2); border:1.5px solid var(--border2);
+  border-radius:var(--r2); padding:5px 7px;
+}
+.bet-adj-sm {
+  width:30px; height:30px; background:var(--bg3); border:1px solid var(--border2);
+  border-radius:8px; color:var(--text); font-size:1.05rem; font-weight:700;
+  cursor:pointer; transition:var(--t);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.bet-adj-sm:hover { background:var(--green-dim); border-color:rgba(34,197,94,.4); color:var(--green) }
+.bet-input-wrap { flex:1; position:relative }
+.bet-input {
+  width:100%; padding:5px 34px 5px 7px;
+  background:transparent; border:none;
+  color:var(--gold); font-family:'Rajdhani',sans-serif;
+  font-size:1.15rem; font-weight:700; text-align:right; outline:none;
+  -moz-appearance:textfield;
+}
+.bet-input::-webkit-inner-spin-button,
+.bet-input::-webkit-outer-spin-button { -webkit-appearance:none }
+.bet-currency {
+  position:absolute; right:5px; top:50%; transform:translateY(-50%);
+  font-size:.56rem; color:var(--muted); font-weight:600; pointer-events:none;
+}
+.preset-row { display:flex; gap:4px; flex-wrap:nowrap }
+.limit-note { text-align:center; font-size:.68rem; line-height:1.4; color:#8b93a7; margin-top:8px }
+.limit-note b { color:#cbd5e1; font-weight:600 }
+.preset-btn {
+  flex:1; padding:5px 2px;
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:7px; color:var(--muted);
+  font-size:.66rem; font-weight:700; cursor:pointer; transition:var(--t);
+  font-family:'Inter',sans-serif; white-space:nowrap;
+}
+.preset-btn:hover,
+.preset-btn.active {
+  background:var(--gold-dim); border-color:rgba(245,158,11,.4); color:var(--gold);
+}
+.bet-adj-xs {
+  flex:1; padding:5px 3px;
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:7px; color:var(--muted);
+  font-size:.6rem; font-weight:700; cursor:pointer; transition:var(--t);
+  font-family:'Inter',sans-serif; white-space:nowrap;
+}
+.bet-adj-xs:hover { background:var(--green-dim); border-color:rgba(34,197,94,.4); color:var(--green) }
+
+/* Linha 2: auto + botão */
+.cp-row-2 { display:flex; gap:7px; align-items:flex-start }
+.auto-compact {
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:var(--r2); padding:9px 11px;
+  flex-shrink:0; min-width:108px;
+}
+.auto-label-row {
+  display:flex; align-items:center; gap:6px;
+  font-size:.7rem; color:var(--muted); cursor:pointer;
+}
+.auto-label-row i    { color:var(--gold); font-size:.78rem }
+.auto-label-row span { flex:1; font-weight:500 }
+.auto-section { margin-top:7px }
+#auto-cashout-slider {
+  -webkit-appearance:none; width:100%; height:5px;
+  background:var(--bg3); border-radius:5px; outline:none; cursor:pointer;
+}
+#auto-cashout-slider::-webkit-slider-thumb {
+  -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+  background:linear-gradient(135deg,var(--green),#16a34a);
+  border:2px solid #fff; box-shadow:0 0 8px var(--green-glow); cursor:pointer;
+}
+.auto-labels {
+  display:flex; justify-content:space-between;
+  font-size:.56rem; color:var(--muted); margin-top:5px;
+}
+.auto-val-center {
+  font-family:'Rajdhani',sans-serif; font-size:.92rem; font-weight:700; color:var(--green);
+}
+.toggle-switch { margin-left:auto; position:relative; cursor:pointer }
+.toggle-switch input { display:none }
+.toggle-track {
+  display:block; width:34px; height:18px;
+  background:var(--bg3); border:1.5px solid var(--border2);
+  border-radius:9px; position:relative; transition:var(--t);
+}
+.toggle-track::after {
+  content:''; position:absolute; top:2px; left:2px;
+  width:12px; height:12px; background:var(--muted); border-radius:50%; transition:var(--t);
+}
+.toggle-switch input:checked ~ .toggle-track { background:var(--green-dim); border-color:rgba(34,197,94,.5) }
+.toggle-switch input:checked ~ .toggle-track::after { left:18px; background:var(--green) }
+
+/* ── BOTÃO PRINCIPAL ────────────────────────────────────────── */
+.action-btn {
+  flex:1; padding:0 16px; height:52px;
+  background:linear-gradient(135deg,var(--green),#16a34a);
+  border:none; color:#fff; border-radius:var(--r2);
+  font-family:'Rajdhani',sans-serif; font-size:1.05rem; font-weight:700;
+  letter-spacing:1px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  box-shadow:0 6px 22px var(--green-glow); transition:var(--t);
+  text-transform:uppercase; animation:pulse-ring 2.5s infinite; white-space:nowrap;
+}
+.action-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 28px var(--green-glow) }
+.action-btn:active:not(:disabled){ transform:scale(.98) }
+.action-btn:disabled { background:var(--bg3); color:var(--dim); box-shadow:none; cursor:not-allowed; animation:none }
+.action-btn.cashout-mode {
+  background:linear-gradient(135deg,var(--gold),#d97706);
+  box-shadow:0 6px 22px var(--gold-glow);
+  animation:glow-pulse 1.5s infinite;
+}
+.result-box .action-btn { flex:none; width:100%; height:auto; padding:14px }
+
+/* ── BOTTOM SHEET ───────────────────────────────────────────── */
+.sheet-backdrop {
+  position:fixed; inset:0; z-index:1100;
+  background:rgba(4,5,7,.72); backdrop-filter:blur(6px);
+  opacity:0; visibility:hidden; transition:var(--t);
+}
+.sheet-backdrop.active { opacity:1; visibility:visible }
+
+.mines-sheet {
+  position:fixed; bottom:0; left:0; right:0; z-index:1101;
+  background:var(--bg2);
+  border-top:1px solid var(--border2);
+  border-radius:22px 22px 0 0;
+  padding:0 16px 34px;
+  transform:translateY(100%);
+  transition:transform .38s cubic-bezier(0.2,1,0.2,1);
+  max-width:520px; margin:0 auto;
+}
+.mines-sheet.active { transform:translateY(0) }
+
+@media(min-width:521px) {
+  .mines-sheet {
+    left:50%; right:auto; width:520px;
+    transform:translateX(-50%) translateY(100%);
+  }
+  .mines-sheet.active { transform:translateX(-50%) translateY(0) }
+}
+
+.sheet-handle {
+  width:40px; height:4px; background:var(--border2);
+  border-radius:4px; margin:10px auto 14px;
+}
+.sheet-title {
+  font-family:'Rajdhani',sans-serif; font-size:.95rem; font-weight:700;
+  color:var(--muted); text-transform:uppercase; letter-spacing:.7px;
+  display:flex; align-items:center; gap:7px; margin-bottom:14px;
+}
+.sheet-title i { color:var(--red) }
+
+.sheet-grid {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
+}
+.sheet-btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; padding:10px 4px;
+  background:var(--bg3); border:1.5px solid var(--border2);
+  border-radius:12px; cursor:pointer; transition:var(--t);
+}
+.sheet-btn:hover  { background:var(--red-dim); border-color:rgba(239,68,68,.4) }
+.sheet-btn.active {
+  background:linear-gradient(135deg,var(--red),#7f1d1d);
+  border-color:var(--red); box-shadow:0 4px 12px var(--red-glow);
+}
+.sb-num {
+  font-family:'Rajdhani',sans-serif; font-size:1.3rem; font-weight:700;
+  color:var(--text); line-height:1;
+}
+.sheet-btn.active .sb-num { color:#fff }
+.sb-lbl { font-size:.5rem; color:var(--muted) }
+.sheet-btn.active .sb-lbl { color:rgba(255,255,255,.7) }
+
+/* ── HISTÓRICO ──────────────────────────────────────────────── */
+.history-section {
+  margin-top:12px; background:var(--bg2); border:1px solid var(--border);
+  border-radius:var(--r2); padding:12px;
+  animation:fadeUp .4s var(--ease) .2s both;
+}
+.history-header {
+  font-size:.68rem; color:var(--muted); text-transform:uppercase;
+  letter-spacing:.7px; display:flex; align-items:center; gap:6px; margin-bottom:10px;
+}
+.history-header i { color:var(--green) }
+.history-list { display:flex; gap:6px; flex-wrap:wrap }
+.h-round {
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:9px; padding:6px 9px;
+  font-family:'Rajdhani',sans-serif; transition:var(--t); min-width:46px;
+}
+.h-round.h-win  { border-color:rgba(34,197,94,.35);  background:var(--green-dim) }
+.h-round.h-loss { border-color:rgba(239,68,68,.35);  background:var(--red-dim) }
+.h-mult { font-size:.88rem; font-weight:700; color:var(--gold) }
+.h-win  .h-mult { color:var(--green) }
+.h-loss .h-mult { color:var(--red) }
+.h-mines-tag {
+  font-size:.5rem; color:var(--muted); display:flex; align-items:center; gap:2px;
+}
+.h-mines-tag i { font-size:.46rem; color:var(--red) }
+
+/* ── TOAST ──────────────────────────────────────────────────── */
+.toast-wrap {
+  position:fixed; bottom:24px; right:14px;
+  display:flex; flex-direction:column; gap:7px; z-index:2000; pointer-events:none;
+}
+.toast {
+  display:flex; align-items:center; gap:9px; padding:10px 14px;
+  background:var(--bg3); border:1px solid var(--border2);
+  border-radius:var(--r2); font-size:.78rem; font-weight:500; color:var(--text);
+  box-shadow:0 6px 20px rgba(0,0,0,.4); pointer-events:auto;
+  animation:toastIn .32s var(--ease); max-width:270px;
+}
+.toast.win  { border-color:rgba(34,197,94,.4) }
+.toast.win  i { color:var(--green) }
+.toast.loss { border-color:rgba(239,68,68,.4) }
+.toast.loss i { color:var(--red) }
+.toast.info i { color:var(--blue) }
+.toast.leaving { animation:toastOut .28s var(--ease) forwards }
+
+/* ── MODAIS ─────────────────────────────────────────────────── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(4,5,7,.92);
+  backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center;
+  z-index:3000; padding:16px;
+}
+.modal-box {
+  background:var(--bg2); border:1px solid var(--border2);
+  border-radius:var(--r3); padding:22px; width:100%; max-width:370px;
+}
+.modal-title {
+  font-family:'Rajdhani',sans-serif; font-size:1.1rem; font-weight:700; color:var(--text);
+  display:flex; align-items:center; gap:7px; margin-bottom:16px;
+}
+.modal-title i { color:var(--green) }
+.pf-row { display:flex; flex-direction:column; gap:3px; margin-bottom:12px }
+.pf-row span { font-size:.68rem; color:var(--muted) }
+.pf-row code {
+  font-family:monospace; font-size:.7rem; color:var(--green);
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:7px; padding:7px 9px; word-break:break-all;
+}
+.pf-info { font-size:.68rem; color:var(--muted); margin-bottom:16px; line-height:1.5 }
+.modal-close {
+  width:100%; padding:11px; background:var(--bg3); border:1px solid var(--border2);
+  border-radius:var(--r); color:var(--text); font-family:'Inter',sans-serif;
+  font-size:.84rem; font-weight:600; cursor:pointer; transition:var(--t);
+}
+.modal-close:hover { background:var(--green-dim); border-color:rgba(34,197,94,.4); color:var(--green) }
+.result-box { text-align:center }
+.result-icon { font-size:3rem; margin-bottom:10px; animation:winPop .5s var(--ease) }
+.result-icon.win-icon  i { color:var(--gold); filter:drop-shadow(0 0 16px var(--gold-glow)) }
+.result-icon.loss-icon i { color:var(--red);  filter:drop-shadow(0 0 16px var(--red-glow)) }
+.result-title {
+  font-family:'Rajdhani',sans-serif; font-size:1.85rem; font-weight:700;
+  letter-spacing:2px; margin-bottom:7px;
+}
+.result-title.win  { color:var(--gold) }
+.result-title.loss { color:var(--red) }
+.result-sub    { font-size:.78rem; color:var(--muted); margin-bottom:12px }
+.result-amount {
+  font-family:'Rajdhani',sans-serif; font-size:1.95rem; font-weight:700; margin-bottom:4px;
+}
+.result-amount.win  { color:var(--green); text-shadow:0 0 16px var(--green-glow) }
+.result-amount.loss { color:var(--red) }
+
+/* ── CONFETTI ───────────────────────────────────────────────── */
+.confetti-p {
+  position:fixed; pointer-events:none; z-index:9999;
+  animation:confetti-drop linear forwards;
+}
+
+/* ── PERFIL NO MENU LATERAL ─────────────────────────────────── */
+.side-profile {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.side-avatar {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--red), #7f1d1d);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1rem;
+  box-shadow: 0 4px 10px var(--red-glow);
+  flex-shrink: 0;
+}
+.player-name {
+  display: block;
+  font-size: .88rem; font-weight: 700;
+  color: var(--text); line-height: 1.2;
+}
+.player-id {
+  display: block;
+  font-size: .6rem; color: var(--muted);
+}
+
+/* ── SALDO NO MENU LATERAL ──────────────────────────────────── */
+.side-balance {
+  margin: 10px 14px;
+  background: rgba(34,197,94,0.06);
+  border: 1px solid rgba(34,197,94,0.2);
+  border-radius: var(--r2);
+  padding: 10px 13px;
+}
+.side-balance-label {
+  font-size: .56rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  margin-bottom: 3px;
+}
+.side-balance-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--green);
+}
+.side-balance-value i {
+  font-size: .8rem;
+  color: var(--green);
+}
+
+/* ── LINK TERMINAR SESSÃO ───────────────────────────────────── */
+.menu-options li a[href="index.html"],
+#logout-btn {
+  color: var(--red) !important;
+}
+.menu-options li a[href="index.html"] i,
+#logout-btn i {
+  color: var(--red) !important;
+}
+.menu-options li a[href="index.html"]:hover,
+#logout-btn:hover {
+  background: var(--red-dim) !important;
+}
+  </style>
+</head>
+<body>
+
+  <canvas id="bg-canvas"></canvas>
+  <div class="menu-overlay" id="menu-overlay"></div>
+
+  <!-- HEADER -->
+  <header class="top-bar">
+    <a href="jogos.html" class="back-btn"><i class="fas fa-chevron-left"></i></a>
+    <div class="brand">
+      <div class="brand-icon"><i class="fas fa-bomb"></i></div>
+      <div>
+        <span class="brand-name">MINES</span>
+        <span class="brand-sub">Master Bet</span>
+      </div>
+    </div>
+    <div class="balance-pill" id="balance-pill">
+      <i class="fas fa-wallet"></i>
+      <!-- ID ÚNICO para o saldo do header -->
+      <span id="balance-amount">0,00</span>
+      <small>MZN</small>
+    </div>
+    <button class="hamburger" id="menu-toggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <!-- MENU LATERAL -->
+  <aside class="side-menu" id="side-menu">
+    <div class="side-menu-header">
+      <div class="side-brand"><i class="fas fa-bomb"></i> Master<b>Bet</b></div>
+      <button class="close-btn" id="close-menu"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Perfil do jogador (preenchido via JS pelo Firestore) -->
+    <div class="side-profile">
+      <div class="side-avatar"><i class="fas fa-user"></i></div>
+      <div>
+        <span class="player-name">A carregar...</span>
+        <small class="player-id">ID: —</small>
+      </div>
+    </div>
+
+    <!-- Saldo no menu — ID CORRIGIDO (era "balance-amount", agora "balance-amount-menu") -->
+    <div class="side-balance">
+      <div class="side-balance-label">Saldo Disponível</div>
+      <div class="side-balance-value">
+        <i class="fas fa-wallet"></i>
+        <span id="balance-amount-menu">0,00</span> MZN
+      </div>
+    </div>
+
+    <ul class="menu-options">
+      <li><a href="jogos.html"><i class="fas fa-home"></i> Início</a></li>
+      <li><a href="#" id="toggle-sound"><i class="fas fa-volume-up" id="sound-icon"></i> Som <span id="sound-status" class="status-badge on">ON</span></a></li>
+      <li><a href="#"><i class="fas fa-headset"></i> Suporte 24h</a></li>
+      <li><a href="#"><i class="fas fa-circle-info"></i> Sobre</a></li>
+      <li><a href="index.html" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Terminar Sessão</a></li>
+    </ul>
+    <div class="side-footer">© 2025 Master Bet · Moçambique</div>
+  </aside>
+
+  <!-- BOTTOM SHEET: escolha de minas -->
+  <div class="sheet-backdrop" id="sheet-backdrop"></div>
+  <div class="mines-sheet" id="mines-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><i class="fas fa-bomb"></i> Escolher Número de Minas</div>
+    <div class="sheet-grid" id="sheet-grid">
+      <button class="sheet-btn" data-mines="1"><span class="sb-num">1</span><span class="sb-lbl">mina</span></button>
+      <button class="sheet-btn" data-mines="2"><span class="sb-num">2</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn" data-mines="3"><span class="sb-num">3</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn" data-mines="4"><span class="sb-num">4</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn active" data-mines="5"><span class="sb-num">5</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn" data-mines="6"><span class="sb-num">6</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn" data-mines="7"><span class="sb-num">7</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn" data-mines="8"><span class="sb-num">8</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn" data-mines="10"><span class="sb-num">10</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn" data-mines="12"><span class="sb-num">12</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn" data-mines="15"><span class="sb-num">15</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn" data-mines="20"><span class="sb-num">20</span><span class="sb-lbl">minas</span></button>
+      <button class="sheet-btn" data-mines="24"><span class="sb-num">24</span><span class="sb-lbl">minas</span></button>
+    </div>
+  </div>
+
+  <!-- CORPO PRINCIPAL -->
+  <main class="mines-game">
+
+    <!-- BARRA TOPO: stats + mult + PF numa linha -->
+    <div class="top-info-bar">
+      <div class="info-stats">
+        <div class="is-item red">
+          <i class="fas fa-bomb"></i>
+          <span id="stat-mines">5</span>
+        </div>
+        <div class="is-item gold">
+          <i class="fas fa-gem"></i>
+          <span id="stat-gems">20</span>
+        </div>
+        <div class="is-item green">
+          <i class="fas fa-crosshairs"></i>
+          <span id="stat-revealed">0</span>
+        </div>
+        <div class="is-item blue">
+          <i class="fas fa-percent"></i>
+          <span id="stat-chance">96</span>
+        </div>
+      </div>
+      <div class="tib-divider"></div>
+      <div class="info-mult">
+        <span class="im-label">MULT</span>
+        <span class="im-value" id="current-multiplier">1.00<small>x</small></span>
+        <span class="im-profit" id="mult-profit">+0,00</span>
+      </div>
+      <div class="tib-divider"></div>
+      <div class="info-pf">
+        <i class="fas fa-shield-halved"></i>
+        <span class="hash-val" id="current-hash">gerando…</span>
+        <button class="verify-btn" id="verify-btn"><i class="fas fa-magnifying-glass"></i></button>
+      </div>
+    </div>
+
+    <!-- TABULEIRO -->
+    <div class="board-wrap">
+      <div class="game-board" id="game-board"></div>
+    </div>
+
+    <!-- PAINEL DE CONTROLO -->
+    <div class="control-panel">
+
+      <div class="cp-row">
+        <button class="mines-picker" id="mines-picker">
+          <div class="mp-icon"><i class="fas fa-bomb"></i></div>
+          <div class="mp-info">
+            <span class="mp-label">Minas</span>
+            <span class="mp-val" id="picker-label">5</span>
+          </div>
+          <i class="fas fa-chevron-down mp-arrow" id="picker-arrow"></i>
+        </button>
+
+        <div class="bet-block">
+          <div class="bet-top-row">
+            <button class="bet-adj-sm" onclick="adjustBet(-50)">−</button>
+            <div class="bet-input-wrap">
+              <input type="number" id="betAmount" class="bet-input" value="100.00" min="1" max="500" step="10" />
+              <span class="bet-currency">MZN</span>
+            </div>
+            <button class="bet-adj-sm" onclick="adjustBet(50)">+</button>
+          </div>
+          <div class="preset-row">
+            <button class="preset-btn" data-val="20">20</button>
+            <button class="preset-btn" data-val="50">50</button>
+            <button class="preset-btn" data-val="100">100</button>
+            <button class="preset-btn" data-val="200">200</button>
+            <button class="preset-btn" data-val="500">500</button>
+            <button class="bet-adj-xs" onclick="setMinBet()">MIN</button>
+            <button class="bet-adj-xs" onclick="setMaxBet()">MAX</button>
+          </div>
+          <div class="limit-note">Aposta máx. <b>500,00 MZN</b> · Prémio máx. <b>5.000,00 MZN</b> por rodada</div>
+        </div>
+      </div>
+
+      <div class="cp-row-2">
+        <div class="auto-compact">
+          <label class="auto-label-row">
+            <i class="fas fa-robot"></i>
+            <span>Auto</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auto-toggle" />
+              <span class="toggle-track"></span>
+            </label>
+          </label>
+          <div class="auto-section" id="auto-section" style="display:none">
+            <input type="range" id="auto-cashout-slider" min="101" max="2000" value="200" step="1" />
+            <div class="auto-labels">
+              <span>1.01x</span>
+              <span class="auto-val-center" id="auto-value">2.00x</span>
+              <span>20x</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="action-btn" id="bet-btn">
+          <i class="fas fa-play" id="bet-icon"></i>
+          <span id="bet-label">Iniciar Jogo</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="history-section">
+      <div class="history-header">
+        <i class="fas fa-clock-rotate-left"></i> Últimas Rodadas
+      </div>
+      <div id="history-list" class="history-list"></div>
+    </div>
+
+  </main>
+
+  <!-- MODAL PROVABLY FAIR -->
+  <div class="modal-overlay" id="pf-modal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-title"><i class="fas fa-shield-halved"></i> Verificação Provably Fair</div>
+      <div class="pf-row"><span>Server Seed (hash):</span><code id="pf-hash">—</code></div>
+      <div class="pf-row"><span>Client Seed:</span><code id="pf-client">—</code></div>
+      <div class="pf-row"><span>Nonce:</span><code id="pf-nonce">—</code></div>
+      <p class="pf-info">Após a rodada, o Server Seed original é revelado para que possas verificar o resultado de forma independente.</p>
+      <button class="modal-close" id="pf-close">Fechar</button>
+    </div>
+  </div>
+
+  <!-- MODAL RESULTADO -->
+  <div class="modal-overlay" id="result-modal" style="display:none">
+    <div class="modal-box result-box" id="result-box">
+      <div class="result-icon" id="result-icon"></div>
+      <div class="result-title" id="result-title"></div>
+      <div class="result-sub" id="result-sub"></div>
+      <div class="result-amount" id="result-amount"></div>
+      <button class="action-btn" id="result-close" style="margin-top:20px">
+        <i class="fas fa-rotate-right"></i> Jogar Novamente
+      </button>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <!-- ÁUDIO -->
+  <audio id="winSound"     src="https://assets.mixkit.co/sfx/preview/mixkit-magical-coin-win-1936.mp3"   preload="auto"></audio>
+  <audio id="loseSound"    src="https://assets.mixkit.co/sfx/preview/mixkit-explosion-impact-1684.mp3"   preload="auto"></audio>
+  <audio id="cashoutSound" src="https://assets.mixkit.co/sfx/preview/mixkit-coins-handling-1939.mp3"     preload="auto"></audio>
+  <audio id="clickSound"   src="https://assets.mixkit.co/sfx/preview/mixkit-game-ball-tap-2073.mp3"      preload="auto"></audio>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+  <!-- IMPORTANTE: type="module" para suportar imports do Firebase -->
+  <script type="module">
+;(function () {
+  'use strict';
+
+  /* ===================================================================
+     FIREBASE
+     =================================================================== */
+  import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js").then(({ initializeApp }) => {
+    import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({ getAuth, onAuthStateChanged }) => {
+      import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js").then(
+        ({ getFirestore, doc, collection, onSnapshot, writeBatch, increment, serverTimestamp }) => {
+
+  /* ── Config ── */
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAMaLF1E7X9rtmlu-hyZFSBeiZtlAobyT4",
+    authDomain:        "master-bet-d2e04.firebaseapp.com",
+    projectId:         "master-bet-d2e04",
+    storageBucket:     "master-bet-d2e04.firebasestorage.app",
+    messagingSenderId: "902595176891",
+    appId:             "1:902595176891:android:7e6989c71b9d17b9aa7c9e"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  /* uid real do Firebase Auth (as regras exigem utilizador autenticado) */
+  var userId = null;
+
+  /* ===================================================================
+     CONFIGURAÇÕES DO JOGO
+     =================================================================== */
+  var CFG = {
+    TOTAL:      25,
+    BET_MIN:    1,       // aposta mínima (as regras do Firestore também aceitam 1)
+    BET_DEFAULT: 10,     // valor que já aparece no campo de aposta
+    BET_MAX:    500,     // aposta máxima por rodada (MZN)
+    MAX_MULT:   100,     // limite das regras do Firestore
+    MAX_PAYOUT: 5000,    // prémio máximo por rodada (MZN): o ganho máx. (xN) baixa quando a aposta sobe
+    GAME_ID:    'mines'
+  };
+
+  /* Retorno ao jogador (RTP) por nº de minas: a casa fica com o resto.
+     Poucas minas = ganho mais baixo por gema. */
+  function rtpFor(mines) {
+    if (mines <= 1)  return 0.88;
+    if (mines <= 2)  return 0.89;
+    if (mines <= 4)  return 0.90;
+    if (mines <= 9)  return 0.91;
+    return 0.92;
+  }
+
+  /* Limite de multiplicador consoante o valor apostado (apostas altas = limite menor) */
+  function maxMultFor(bet) {
+    var tier = bet <= 500 ? 50 : bet <= 2000 ? 25 : 10;
+    var byPayout = Math.floor((CFG.MAX_PAYOUT / bet) * 100) / 100;
+    return Math.max(1, Math.min(tier, byPayout, CFG.MAX_MULT));
+  }
+
+  /* ===================================================================
+     ESTADO
+     =================================================================== */
+  var S = {
+    balance:           0,
+    nomeJogador:       'Jogador',
+    betAmount:         10.00,
+    betId:             null,
+    maxMult:           50,
+    minesCount:        5,
+    gameActive:        false,
+    revealedSafe:      0,
+    minePositions:     new Set(),
+    currentMultiplier: 1.00,
+    soundEnabled:      true,
+    autoEnabled:       false,
+    autoCashout:       2.00,
+    serverSeed:        '',
+    clientSeed:        '',
+    nonce:             0,
+    firestoreReady:    false,
+    busy:              false
+  };
+
+  /* ===================================================================
+     ELEMENTOS DO DOM
+     =================================================================== */
+  var EL = {
+    balance:       document.getElementById('balance-amount'),
+    balanceMenu:   document.getElementById('balance-amount-menu'),
+    betInput:      document.getElementById('betAmount'),
+    betBtn:        document.getElementById('bet-btn'),
+    betIcon:       document.getElementById('bet-icon'),
+    betLabel:      document.getElementById('bet-label'),
+    board:         document.getElementById('game-board'),
+    multiplier:    document.getElementById('current-multiplier'),
+    multProfit:    document.getElementById('mult-profit'),
+    hashEl:        document.getElementById('current-hash'),
+    historyList:   document.getElementById('history-list'),
+    toastWrap:     document.getElementById('toast-wrap'),
+    autoToggle:    document.getElementById('auto-toggle'),
+    autoSection:   document.getElementById('auto-section'),
+    autoSlider:    document.getElementById('auto-cashout-slider'),
+    autoValue:     document.getElementById('auto-value'),
+    statMines:     document.getElementById('stat-mines'),
+    statGems:      document.getElementById('stat-gems'),
+    statRevealed:  document.getElementById('stat-revealed'),
+    statChance:    document.getElementById('stat-chance'),
+    menuToggle:    document.getElementById('menu-toggle'),
+    sideMenu:      document.getElementById('side-menu'),
+    overlay:       document.getElementById('menu-overlay'),
+    closeMenu:     document.getElementById('close-menu'),
+    soundToggle:   document.getElementById('toggle-sound'),
+    soundStatus:   document.getElementById('sound-status'),
+    soundIcon:     document.getElementById('sound-icon'),
+    verifyBtn:     document.getElementById('verify-btn'),
+    pfModal:       document.getElementById('pf-modal'),
+    pfClose:       document.getElementById('pf-close'),
+    pfHash:        document.getElementById('pf-hash'),
+    pfClient:      document.getElementById('pf-client'),
+    pfNonce:       document.getElementById('pf-nonce'),
+    resultModal:   document.getElementById('result-modal'),
+    resultBox:     document.getElementById('result-box'),
+    resultIcon:    document.getElementById('result-icon'),
+    resultTitle:   document.getElementById('result-title'),
+    resultSub:     document.getElementById('result-sub'),
+    resultAmount:  document.getElementById('result-amount'),
+    resultClose:   document.getElementById('result-close'),
+    presetBtns:    document.querySelectorAll('.preset-btn'),
+    minesPicker:   document.getElementById('mines-picker'),
+    pickerLabel:   document.getElementById('picker-label'),
+    sheetBackdrop: document.getElementById('sheet-backdrop'),
+    minesSheet:    document.getElementById('mines-sheet'),
+    sheetBtns:     document.querySelectorAll('.sheet-btn')
+  };
+
+  /* ===================================================================
+     UTILS
+     =================================================================== */
+  function money(v) { return Math.round(v * 100) / 100; }
+
+  function fmt(v) {
+    return v.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) + ' MZN';
+  }
+
+  function errMsg(e) {
+    console.error('Firebase:', e && e.code, e && e.message);
+    return (e && e.code === 'permission-denied')
+      ? 'Recusado pelo Firebase. Verifique as regras do Firestore.'
+      : 'Erro de ligação. Tente novamente.';
+  }
+
+  /* ===================================================================
+     TOAST
+     =================================================================== */
+  function toast(msg, type, dur) {
+    type = type || 'info';
+    dur  = dur  || 3500;
+    var icons = { win: 'fa-check-circle', loss: 'fa-times-circle', info: 'fa-circle-info' };
+    var t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.innerHTML = '<i class="fas ' + (icons[type] || icons.info) + '"></i><span>' + msg + '</span>';
+    EL.toastWrap.appendChild(t);
+    setTimeout(function () {
+      t.classList.add('leaving');
+      t.addEventListener('animationend', function () { t.remove(); }, { once: true });
+    }, dur);
+  }
+
+  /* ===================================================================
+     SOM
+     =================================================================== */
+  function playSound(id) {
+    if (!S.soundEnabled) return;
+    var a = document.getElementById(id);
+    if (!a) return;
+    if (id === 'winSound') {
+      var semitones = Math.min(S.revealedSafe, 8);
+      var rate  = Math.pow(2, semitones / 24);
+      var clone = a.cloneNode();
+      clone.preservesPitch        = false;
+      clone.mozPreservesPitch     = false;
+      clone.webkitPreservesPitch  = false;
+      clone.playbackRate = rate;
+      clone.volume = 0.9;
+      clone.play().catch(function () {});
+      clone.addEventListener('ended', function () { clone.remove(); }, { once: true });
+      return;
+    }
+    a.currentTime = 0;
+    a.play().catch(function () {});
+  }
+
+  /* ===================================================================
+     CANVAS DE FUNDO
+     =================================================================== */
+  function initBgCanvas() {
+    var canvas = document.getElementById('bg-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width  = window.innerWidth;
+    var H = canvas.height = window.innerHeight;
+    var pts = [];
+    for (var i = 0; i < 40; i++) {
+      pts.push({
+        x: Math.random() * W, y: Math.random() * H,
+        r:  Math.random() * 1.4 + 0.3,
+        dx: (Math.random() - 0.5) * 0.3,
+        dy: (Math.random() - 0.5) * 0.3,
+        a:  Math.random() * 0.4 + 0.05,
+        c:  Math.random() > 0.6 ? '34,197,94' : '245,158,11'
+      });
+    }
+    (function draw() {
+      ctx.clearRect(0, 0, W, H);
+      pts.forEach(function (p) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(' + p.c + ',' + p.a + ')';
+        ctx.fill();
+        p.x += p.dx; p.y += p.dy;
+        if (p.x < 0 || p.x > W) p.dx *= -1;
+        if (p.y < 0 || p.y > H) p.dy *= -1;
+      });
+      requestAnimationFrame(draw);
+    })();
+    window.addEventListener('resize', function () {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    });
+  }
+
+  /* ===================================================================
+     FIRESTORE — SALDO EM TEMPO REAL
+     =================================================================== */
+  function iniciarListenerFirestore() {
+    var userRef = doc(db, 'users', userId);
+
+    onSnapshot(userRef, function (snapshot) {
+      if (!snapshot.exists()) return;
+      var data = snapshot.data();
+
+      S.balance        = parseFloat(data.saldo || 0);
+      S.nomeJogador    = data.nome || 'Jogador';
+      S.firestoreReady = true;
+
+      refreshBalanceUI();
+
+      var nameEl = document.querySelector('.side-menu .player-name');
+      var idEl   = document.querySelector('.side-menu .player-id');
+      if (nameEl) nameEl.textContent = S.nomeJogador;
+      if (idEl)   idEl.textContent   = 'ID: ' + userId.substring(0, 6).toUpperCase();
+    }, function (e) { toast(errMsg(e), 'loss'); });
+  }
+
+  function refreshBalanceUI() {
+    var txt = S.balance.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    if (EL.balance)     EL.balance.textContent     = txt;
+    if (EL.balanceMenu) EL.balanceMenu.textContent = txt;
+  }
+
+  /* ── APOSTAR: cria a aposta (bets) e DESCONTA o saldo na mesma operação ── */
+  async function abrirApostaRemota(valor) {
+    var ref = doc(collection(db, 'bets'));
+    var b   = writeBatch(db);
+    b.set(ref, {
+      uid:      userId,
+      nome:     S.nomeJogador,
+      jogo:     CFG.GAME_ID,
+      minas:    S.minesCount,
+      valor:    valor,
+      estado:   'aberta',
+      criadoEm: serverTimestamp()
+    });
+    b.update(doc(db, 'users', userId), { saldo: increment(-valor) });
+    await b.commit();
+    return ref.id;
+  }
+
+  /* ── SACAR: fecha a aposta como ganha e CREDITA o prémio ── */
+  function fecharGanhaRemoto(id, mult, ganho) {
+    var b = writeBatch(db);
+    b.update(doc(db, 'bets', id), {
+      estado: 'ganha', multiplicador: mult, ganho: ganho, fechadaEm: serverTimestamp()
+    });
+    b.update(doc(db, 'users', userId), { saldo: increment(ganho), ultimaApostaId: id });
+    return b.commit();
+  }
+
+  /* ── SACAR sem gemas reveladas: devolve o valor (aposta cancelada) ── */
+  function cancelarRemoto(id, valor) {
+    var b = writeBatch(db);
+    b.update(doc(db, 'bets', id), { estado: 'cancelada', fechadaEm: serverTimestamp() });
+    b.update(doc(db, 'users', userId), { saldo: increment(valor), ultimaApostaId: id });
+    return b.commit();
+  }
+
+  /* ── PERDER: fecha a aposta como perdida (o saldo já foi descontado) ── */
+  function fecharPerdidaRemoto(id, mult) {
+    var b = writeBatch(db);
+    b.update(doc(db, 'bets', id), {
+      estado: 'perdida', multiplicador: mult, ganho: 0, fechadaEm: serverTimestamp()
+    });
+    return b.commit();
+  }
+
+  /* ===================================================================
+     STATS
+     =================================================================== */
+  function updateStats() {
+    var safeTotal   = CFG.TOTAL - S.minesCount;
+    var remaining   = safeTotal - S.revealedSafe;
+    var totalRemain = CFG.TOTAL - S.revealedSafe;
+    var chance = totalRemain > 0 ? Math.round((remaining / totalRemain) * 100) : 0;
+    EL.statMines.textContent    = S.minesCount;
+    EL.statGems.textContent     = safeTotal;
+    EL.statRevealed.textContent = S.revealedSafe;
+    EL.statChance.textContent   = (S.gameActive
+      ? chance
+      : Math.round(((CFG.TOTAL - S.minesCount) / CFG.TOTAL) * 100)) + '%';
+  }
+
+  /* ===================================================================
+     MULTIPLICADOR
+     =================================================================== */
+  function calcMultiplier() {
+    var safeTotal = CFG.TOTAL - S.minesCount;
+    if (S.revealedSafe === 0) return 1.00;
+    var prob = 1;
+    for (var i = 0; i < S.revealedSafe; i++) {
+      prob *= (safeTotal - i) / (CFG.TOTAL - i);
+    }
+    var m     = money(rtpFor(S.minesCount) / prob);
+    var piso  = 1.00;   // nunca abaixo de 1.00x (aposta devolvida); sem bonus extra por gema, para nao furar o RTP
+    return Math.max(m, piso);
+  }
+
+  function refreshMultiplier() {
+    var m      = S.currentMultiplier;
+    var profit = money((m * S.betAmount) - S.betAmount);
+    EL.multiplier.style.animation = 'none';
+    void EL.multiplier.offsetWidth;
+    EL.multiplier.style.animation = 'mult-update 0.3s ease';
+    EL.multiplier.innerHTML = m.toFixed(2) + '<small>x</small>';
+    EL.multProfit.textContent = (profit >= 0 ? '+' : '') +
+      profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    EL.multProfit.className = 'im-profit' + (profit >= 0 ? '' : ' loss');
+    updateStats();
+    /* saque automático, ou obrigatório ao atingir o multiplicador máximo */
+    if (S.gameActive && (m >= S.maxMult || (S.autoEnabled && m >= S.autoCashout))) cashOut();
+  }
+
+  /* ===================================================================
+     PROVABLY FAIR
+     =================================================================== */
+  function generateSeeds() {
+    if (window.CryptoJS) {
+      S.serverSeed = CryptoJS.lib.WordArray.random(32).toString();
+      S.clientSeed = CryptoJS.lib.WordArray.random(16).toString();
+    } else {
+      S.serverSeed = Array.from({ length: 64 }, function () {
+        return Math.floor(Math.random() * 16).toString(16);
+      }).join('');
+      S.clientSeed = Array.from({ length: 32 }, function () {
+        return Math.floor(Math.random() * 16).toString(16);
+      }).join('');
+    }
+    S.nonce = Date.now();
+    var hash = window.CryptoJS
+      ? CryptoJS.SHA256(S.serverSeed).toString()
+      : S.serverSeed;
+    EL.hashEl.textContent = hash.substring(0, 14) + '...';
+  }
+
+  function placeMines() {
+    S.minePositions.clear();
+    var positions = Array.from({ length: CFG.TOTAL }, function (_, i) { return i; });
+    var hash = window.CryptoJS
+      ? CryptoJS.HmacSHA512(S.clientSeed + '-' + S.nonce, S.serverSeed).toString()
+      : S.serverSeed;
+    var idx = 0;
+    for (var i = CFG.TOTAL - 1; i > 0; i--) {
+      var hex = hash.substring(idx, idx + 8);
+      idx = (idx + 8) % hash.length;
+      var j = parseInt(hex, 16) % (i + 1);
+      var tmp = positions[i]; positions[i] = positions[j]; positions[j] = tmp;
+    }
+    for (var k = 0; k < S.minesCount; k++) S.minePositions.add(positions[k]);
+  }
+
+  /* ===================================================================
+     TABULEIRO
+     =================================================================== */
+  function createBoard() {
+    EL.board.innerHTML = '';
+    for (var i = 0; i < CFG.TOTAL; i++) {
+      var cell = document.createElement('div');
+      cell.className = 'cell';
+      var num = document.createElement('span');
+      num.className   = 'cell-num';
+      num.textContent = i + 1;
+      cell.appendChild(num);
+      cell.dataset.index = i;
+      cell.addEventListener('click', onCellClick);
+      EL.board.appendChild(cell);
+    }
+  }
+
+  function onCellClick(e) {
+    revealCell(parseInt(e.currentTarget.dataset.index));
+  }
+
+  function revealCell(index) {
+    if (!S.gameActive) return;
+    var cell = EL.board.children[index];
+    if (cell.classList.contains('revealed')) return;
+    cell.classList.add('revealed');
+    cell.removeEventListener('click', onCellClick);
+    playSound('clickSound');
+    if (S.minePositions.has(index)) {
+      cell.classList.add('mine');
+      var n = cell.querySelector('.cell-num'); if (n) n.remove();
+      cell.insertAdjacentHTML('beforeend', '<i class="fas fa-bomb"></i>');
+      loseRound();
+    } else {
+      cell.classList.add('safe');
+      var n2 = cell.querySelector('.cell-num'); if (n2) n2.remove();
+      cell.insertAdjacentHTML('beforeend', '<i class="fas fa-gem"></i>');
+      S.revealedSafe++;
+      S.currentMultiplier = Math.min(calcMultiplier(), S.maxMult);
+      refreshMultiplier();
+      playSound('winSound');
+    }
+  }
+
+  /* ===================================================================
+     PERDER — fecha a aposta como perdida (já foi debitada no início)
+     =================================================================== */
+  function loseRound() {
+    S.gameActive = false;
+    playSound('loseSound');
+    EL.board.classList.add('shake');
+    setTimeout(function () { EL.board.classList.remove('shake'); }, 600);
+    S.minePositions.forEach(function (pos) {
+      var cell = EL.board.children[pos];
+      if (!cell.classList.contains('revealed')) {
+        cell.classList.add('revealed', 'mine-hidden');
+        var n = cell.querySelector('.cell-num'); if (n) n.remove();
+        cell.insertAdjacentHTML('beforeend', '<i class="fas fa-bomb"></i>');
+      }
+    });
+    addHistory('loss', S.currentMultiplier);
+    resetBetBtn();
+
+    var id = S.betId; S.betId = null;
+    if (id) fecharPerdidaRemoto(id, S.currentMultiplier)
+      .catch(function (e) { console.error('Perda não registada:', e && e.code); });
+
+    setTimeout(function () { showResultModal(false, 0); }, 800);
+  }
+
+  /* ===================================================================
+     SACAR — credita o prémio (aposta + saldo na mesma operação)
+     =================================================================== */
+  function cashOut() {
+    if (!S.gameActive) return;
+    S.gameActive = false;
+
+    var id     = S.betId; S.betId = null;
+    var mult   = Math.min(S.currentMultiplier, S.maxMult);
+    var payout = money(S.betAmount * mult);
+    var semGemas = S.revealedSafe === 0;
+
+    playSound('cashoutSound');
+    if (!semGemas) { launchConfetti(); addHistory('win', mult); }
+    resetBetBtn();
+
+    var p = semGemas ? cancelarRemoto(id, S.betAmount)
+                     : fecharGanhaRemoto(id, mult, payout);
+    p.catch(function (e) {
+      toast('Saque não registado: ' + errMsg(e), 'loss', 6000);
+    });
+
+    setTimeout(function () { showResultModal(true, payout); }, 300);
+  }
+
+  /* ===================================================================
+     APOSTAR — cria a aposta e debita o saldo
+     =================================================================== */
+  async function placeBet() {
+    if (S.busy || S.gameActive) return;
+    if (!S.firestoreReady) {
+      toast('A carregar dados... aguarde um momento.', 'info');
+      return;
+    }
+    S.betAmount = money(parseFloat(EL.betInput.value) || 0);
+    if (S.betAmount < CFG.BET_MIN) {
+      toast('Aposta mínima: ' + fmt(CFG.BET_MIN), 'info');
+      EL.betInput.value = CFG.BET_MIN.toFixed(2);
+      S.betAmount = CFG.BET_MIN;
+      return;
+    }
+    if (S.betAmount > CFG.BET_MAX) {
+      toast('Aposta máxima: ' + fmt(CFG.BET_MAX), 'info');
+      EL.betInput.value = CFG.BET_MAX.toFixed(2);
+      S.betAmount = CFG.BET_MAX;
+      return;
+    }
+    if (S.betAmount > S.balance) {
+      toast('Saldo insuficiente!', 'loss');
+      return;
+    }
+    if (S.minesCount >= CFG.TOTAL) {
+      toast('Número de minas inválido!', 'info');
+      return;
+    }
+
+    S.busy = true;
+    var id;
+    try {
+      id = await abrirApostaRemota(S.betAmount);
+    } catch (e) {
+      toast(errMsg(e), 'loss');
+      S.busy = false;
+      return;
+    }
+    S.busy = false;
+
+    S.betId             = id;
+    S.maxMult           = maxMultFor(S.betAmount);
+    S.gameActive        = true;
+    S.revealedSafe      = 0;
+    S.currentMultiplier = 1.00;
+
+    generateSeeds();
+    placeMines();
+    createBoard();
+    refreshMultiplier();
+
+    EL.betBtn.classList.add('cashout-mode');
+    EL.betIcon.className    = 'fas fa-hand-holding-dollar';
+    EL.betLabel.textContent = 'Sacar';
+    EL.betBtn.onclick       = cashOut;
+
+    EL.betInput.disabled          = true;
+    EL.minesPicker.disabled       = true;
+    EL.minesPicker.style.opacity  = '0.45';
+    EL.presetBtns.forEach(function (b) { b.disabled = true; });
+    EL.sheetBtns.forEach(function (b)  { b.disabled = true; });
+
+    toast('Aposta de ' + fmt(S.betAmount) + ' colocada! Ganho máx.: ' + S.maxMult.toFixed(0) + 'x · RTP ' + Math.round(rtpFor(S.minesCount) * 100) + '%', 'info', 3500);
+  }
+
+  function resetBetBtn() {
+    EL.betBtn.classList.remove('cashout-mode');
+    EL.betIcon.className    = 'fas fa-play';
+    EL.betLabel.textContent = 'Iniciar Jogo';
+    EL.betBtn.onclick       = placeBet;
+    EL.betInput.disabled          = false;
+    EL.minesPicker.disabled       = false;
+    EL.minesPicker.style.opacity  = '';
+    EL.presetBtns.forEach(function (b) { b.disabled = false; });
+    EL.sheetBtns.forEach(function (b)  { b.disabled = false; });
+  }
+
+  /* ===================================================================
+     BOTTOM SHEET — selector de minas
+     =================================================================== */
+  function openSheet() {
+    if (S.gameActive) return;
+    EL.minesSheet.classList.add('active');
+    EL.sheetBackdrop.classList.add('active');
+    EL.minesPicker.classList.add('open');
+  }
+  function closeSheet() {
+    EL.minesSheet.classList.remove('active');
+    EL.sheetBackdrop.classList.remove('active');
+    EL.minesPicker.classList.remove('open');
+  }
+
+  EL.minesPicker.addEventListener('click', function () {
+    EL.minesSheet.classList.contains('active') ? closeSheet() : openSheet();
+  });
+  EL.sheetBackdrop.addEventListener('click', closeSheet);
+
+  EL.sheetBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (S.gameActive) return;
+      EL.sheetBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      S.minesCount = parseInt(btn.dataset.mines, 10);
+      EL.pickerLabel.textContent = S.minesCount;
+      updateStats();
+      closeSheet();
+    });
+  });
+
+  /* ===================================================================
+     MODAL RESULTADO
+     =================================================================== */
+  function showResultModal(isWin, payout) {
+    EL.resultIcon.className = 'result-icon ' + (isWin ? 'win-icon' : 'loss-icon');
+    EL.resultIcon.innerHTML = isWin
+      ? '<i class="fas fa-trophy"></i>'
+      : '<i class="fas fa-bomb"></i>';
+    EL.resultTitle.textContent = isWin ? 'PARABÉNS!' : 'PERDEU';
+    EL.resultTitle.className   = 'result-title ' + (isWin ? 'win' : 'loss');
+    EL.resultSub.textContent   = isWin
+      ? S.revealedSafe + ' gemas reveladas a ' + S.currentMultiplier.toFixed(2) + 'x'
+      : 'Encontrou uma mina! Melhor sorte na próxima.';
+    EL.resultAmount.textContent = isWin
+      ? '+ ' + fmt(payout)
+      : '- ' + fmt(S.betAmount);
+    EL.resultAmount.className = 'result-amount ' + (isWin ? 'win' : 'loss');
+    EL.resultModal.style.display = 'flex';
+    void EL.resultBox.offsetWidth;
+    EL.resultBox.style.animation = 'none';
+    void EL.resultBox.offsetWidth;
+    EL.resultBox.style.animation = 'winPop 0.5s cubic-bezier(0.25,1,0.5,1)';
+  }
+
+  /* ===================================================================
+     HISTÓRICO
+     =================================================================== */
+  function addHistory(type, mult) {
+    var item = document.createElement('div');
+    item.className = 'h-round h-' + (type === 'win' ? 'win' : 'loss');
+    item.innerHTML =
+      '<span class="h-mult">' + (type === 'win' ? mult.toFixed(2) + 'x' : 'MINA') + '</span>' +
+      '<span class="h-mines-tag"><i class="fas fa-bomb"></i>' + S.minesCount + '</span>';
+    EL.historyList.insertBefore(item, EL.historyList.firstChild);
+    var items = EL.historyList.querySelectorAll('.h-round');
+    if (items.length > 10) EL.historyList.removeChild(items[items.length - 1]);
+  }
+
+  /* ===================================================================
+     CONFETTI
+     =================================================================== */
+  function launchConfetti() {
+    var colors = ['#22c55e', '#f59e0b', '#3b82f6', '#a855f7', '#ef4444', '#f1f5f9'];
+    for (var i = 0; i < 50; i++) {
+      var p = document.createElement('div');
+      p.className = 'confetti-p';
+      p.style.cssText = [
+        'left:'             + Math.random() * 100 + 'vw',
+        'top:-10px',
+        'width:'            + (Math.random() * 8 + 4) + 'px',
+        'height:'           + (Math.random() * 8 + 4) + 'px',
+        'background:'       + colors[Math.floor(Math.random() * colors.length)],
+        'animation-duration:' + (1.5 + Math.random() * 1.5) + 's',
+        'animation-delay:'    + (Math.random() * 0.6) + 's',
+        'border-radius:'    + (Math.random() > 0.5 ? '50%' : '3px'),
+        'transform:rotate(' + Math.floor(Math.random() * 360) + 'deg)'
+      ].join(';');
+      document.body.appendChild(p);
+      p.addEventListener('animationend', function () { this.remove(); }, { once: true });
+    }
+  }
+
+  /* ===================================================================
+     EVENTOS
+     =================================================================== */
+  EL.presetBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (S.gameActive) return;
+      EL.presetBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      var val = parseFloat(btn.dataset.val) || 0;
+      S.betAmount = money(Math.min(S.balance, CFG.BET_MAX, Math.max(CFG.BET_MIN, val)));
+      EL.betInput.value = S.betAmount.toFixed(2);
+    });
+  });
+
+  EL.betInput.addEventListener('input', function () {
+    S.betAmount = parseFloat(EL.betInput.value) || 0;
+    EL.presetBtns.forEach(function (b) { b.classList.remove('active'); });
+  });
+  EL.betInput.addEventListener('wheel', function (e) { e.preventDefault(); }, { passive: false });
+
+  EL.autoToggle.addEventListener('change', function () {
+    S.autoEnabled = this.checked;
+    EL.autoSection.style.display = S.autoEnabled ? 'block' : 'none';
+  });
+
+  EL.autoSlider.addEventListener('input', function () {
+    S.autoCashout = parseFloat((this.value / 100).toFixed(2));
+    EL.autoValue.textContent = S.autoCashout.toFixed(2) + 'x';
+  });
+
+  /* Menu lateral */
+  EL.menuToggle.addEventListener('click', function () {
+    var open = EL.sideMenu.classList.toggle('active');
+    EL.overlay.classList.toggle('active', open);
+    EL.menuToggle.classList.toggle('open', open);
+  });
+  EL.closeMenu.addEventListener('click', function () {
+    EL.sideMenu.classList.remove('active');
+    EL.overlay.classList.remove('active');
+    EL.menuToggle.classList.remove('open');
+  });
+  EL.overlay.addEventListener('click', function () {
+    EL.sideMenu.classList.remove('active');
+    EL.overlay.classList.remove('active');
+    EL.menuToggle.classList.remove('open');
+  });
+
+  /* Som */
+  EL.soundToggle.addEventListener('click', function (e) {
+    e.preventDefault();
+    S.soundEnabled = !S.soundEnabled;
+    EL.soundStatus.textContent = S.soundEnabled ? 'ON' : 'OFF';
+    EL.soundStatus.className   = 'status-badge ' + (S.soundEnabled ? 'on' : 'off');
+    EL.soundIcon.className     = 'fas ' + (S.soundEnabled ? 'fa-volume-up' : 'fa-volume-xmark');
+  });
+
+  /* Provably Fair */
+  EL.verifyBtn.addEventListener('click', function () {
+    EL.pfHash.textContent   = window.CryptoJS
+      ? CryptoJS.SHA256(S.serverSeed).toString()
+      : S.serverSeed || '-';
+    EL.pfClient.textContent = S.clientSeed || '-';
+    EL.pfNonce.textContent  = S.nonce      || '-';
+    EL.pfModal.style.display = 'flex';
+  });
+  EL.pfClose.addEventListener('click', function () { EL.pfModal.style.display = 'none'; });
+  EL.pfModal.addEventListener('click', function (e) {
+    if (e.target === EL.pfModal) EL.pfModal.style.display = 'none';
+  });
+
+  /* Modal resultado */
+  function fecharResultado() {
+    EL.resultModal.style.display = 'none';
+    createBoard();
+    S.revealedSafe      = 0;
+    S.currentMultiplier = 1.00;
+    refreshMultiplier();
+  }
+  EL.resultClose.addEventListener('click', fecharResultado);
+  EL.resultModal.addEventListener('click', function (e) {
+    if (e.target === EL.resultModal) fecharResultado();
+  });
+
+  EL.betBtn.onclick = placeBet;
+
+  /* Botões de ajuste de aposta */
+  window.adjustBet = function (amount) {
+    if (S.gameActive) return;
+    var v = money(Math.min(CFG.BET_MAX, Math.max(CFG.BET_MIN, (parseFloat(EL.betInput.value) || 0) + (amount < 0 ? -10 : 10))));
+    S.betAmount = v;
+    EL.betInput.value = v.toFixed(2);
+    EL.presetBtns.forEach(function (b) { b.classList.remove('active'); });
+  };
+  window.setMinBet = function () {
+    if (S.gameActive) return;
+    S.betAmount = CFG.BET_MIN;
+    EL.betInput.value = CFG.BET_MIN.toFixed(2);
+  };
+  window.setMaxBet = function () {
+    if (S.gameActive) return;
+    S.betAmount = money(Math.min(S.balance, CFG.BET_MAX));
+    EL.betInput.value = S.betAmount.toFixed(2);
+  };
+
+  /* ===================================================================
+     INICIALIZAÇÃO — só depois do login do Firebase
+     =================================================================== */
+  var started = false;
+  function init() {
+    EL.betInput.min   = CFG.BET_MIN;
+    EL.betInput.value = CFG.BET_DEFAULT.toFixed(2);   // começa sempre em 10,00
+    S.betAmount       = CFG.BET_DEFAULT;
+    initBgCanvas();
+    createBoard();
+    generateSeeds();
+    updateStats();
+    refreshMultiplier();
+    EL.autoValue.textContent = S.autoCashout.toFixed(2) + 'x';
+    iniciarListenerFirestore();
+  }
+
+  onAuthStateChanged(auth, function (user) {
+    if (!user) { window.location.replace('index.html'); return; }
+    userId = user.uid;
+    if (!started) { started = true; init(); }
+  });
+
+      }); // firestore
+    }); // auth
+  }); // app
+
+})();
+  </script>
+</body>
+</html>

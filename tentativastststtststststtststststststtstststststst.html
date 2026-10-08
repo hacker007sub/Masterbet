@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-YX7jN4Rd4HCwKI1p3ugBNGbbbIMogsVoeiv8OdE3oyo=' https://www.gstatic.com https://apis.google.com; frame-src https://*.firebaseapp.com https://*.googleapis.com https://accounts.google.com; style-src 'unsafe-inline'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com; img-src 'self' data:; base-uri 'none'; form-action 'none';" />
+  <title>Master Bet | Enviar tentativas</title>
+  <style>
+    :root { color-scheme: dark; --ok:#10b981; --no:#e11d48; --gold:#f59e0b; --card:#0e1218; --line:rgba(255,255,255,.08); }
+    * { box-sizing: border-box; }
+    body { margin: 0 auto; max-width: 520px; font-family: Inter, system-ui, sans-serif; background: radial-gradient(ellipse at top, #121a26 0, #07090c 60%); color: #f1f5f9; padding: 16px; min-height: 100vh; }
+    h1 { font-size: 1.2rem; margin: 0 0 4px; }
+    .muted { color: #64748b; font-size: .8rem; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-top: 14px; animation: rise .35s ease both; }
+    .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    label { display: block; font-size: .8rem; color: #94a3b8; margin-bottom: 6px; }
+    input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); background: #0a0e14; color: #f1f5f9; font-size: 1rem; }
+    input:focus { outline: 0; border-color: var(--gold); }
+    button { border: 0; border-radius: 8px; padding: 11px 14px; font-weight: 700; cursor: pointer; color: #fff; transition: transform .15s, filter .15s; }
+    button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .ok { background: var(--ok); } .no { background: var(--no); } .gold { background: var(--gold); color: #111; }
+    .acts { display: flex; gap: 8px; flex-wrap: wrap; } .acts button { flex: 1; }
+    .chips { display: flex; gap: 6px; margin-bottom: 10px; }
+    .chip { background: #131a24; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: .8rem; color: #94a3b8; }
+    .chip.on { background: var(--gold); color: #111; border-color: var(--gold); }
+    .tent { text-align: center; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.4); border-radius: 12px; padding: 8px 16px; }
+    .tent b { display: block; font-size: 1.9rem; color: var(--gold); line-height: 1; }
+    .tent.pulse { animation: pulse .6s ease; }
+    #msg, #t-status { padding: 10px 0; text-align: center; } #t-status.good { color: var(--ok); } #t-status.bad { color: #f87171; }
+    .res { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .res button { background: #131a24; border: 1px solid var(--line); text-align: left; font-weight: 600; }
+    .res button small { color: #64748b; font-weight: 400; margin-left: 6px; }
+    .hidden { display: none; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    @keyframes pulse { 50% { transform: scale(1.15); } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <h1>Enviar tentativas — Master Bet</h1>
+  <div class="muted"><span id="who-text">A verificar acesso...</span>
+    <button id="logout" class="no hidden" style="padding:4px 10px; margin-left:8px;">Sair</button></div>
+  <div id="msg"></div>
+
+  <form id="login" class="hidden card" autocomplete="off">
+    <label>Entre com a conta de administrador</label>
+    <input id="a-phone" type="tel" inputmode="numeric" maxlength="9" pattern="[0-9]{9}" placeholder="Telemóvel (9 dígitos)" required>
+    <input id="a-pass" type="password" autocomplete="current-password" placeholder="Palavra-passe" required>
+    <button id="login-btn" class="ok" type="submit" style="width:100%;">Entrar</button>
+  </form>
+
+  <div id="panel" class="hidden">
+    <form id="find" class="card" autocomplete="off">
+      <label for="f-name">Nome do jogador</label>
+      <input id="f-name" type="text" maxlength="40" placeholder="Escreva o nome (ou parte do início)" required>
+      <div class="res" id="f-res"></div>
+      <button class="ok" type="submit" style="width:100%; margin-top:10px;">Procurar</button>
+    </form>
+
+    <div id="target" class="card hidden">
+      <div class="row">
+        <div><b id="t-nome"></b><div class="muted" id="t-tel"></div></div>
+        <div class="tent" id="t-box"><b id="t-n">0</b><span class="muted">tentativas</span></div>
+      </div>
+      <div style="height:14px"></div>
+      <label for="t-qtd">Quantidade</label>
+      <input id="t-qtd" type="number" inputmode="numeric" min="0" max="99" value="3">
+      <div class="chips" id="t-chips"></div>
+      <div class="acts">
+        <button class="ok" id="t-add">Enviar (+)</button>
+        <button class="gold" id="t-set">Definir total</button>
+        <button class="no" id="t-zero">Zerar</button>
+      </div>
+      <div id="t-status" class="muted"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    /**
+     * MASTER BET — enviar tentativas (ficheiro único, mesmo Firebase do jogo)
+     * Escreve users/<uid>.tentativas; o avia.html lê esse campo em tempo real.
+     * A segurança real está nas REGRAS DO FIRESTORE (só admin pode escrever aqui).
+     */
+    const $ = (id) => document.getElementById(id);
+    const show = (t) => { $('msg').textContent = t; };
+    window.addEventListener('error', (e) => show('Erro ao carregar: ' + (e.message || 'ficheiro não encontrado')));
+    window.addEventListener('unhandledrejection', (e) => show('Erro: ' + ((e.reason && (e.reason.code || e.reason.message)) || e.reason)));
+
+    const AUTH_URL = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    const FS_URL = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    (async () => {
+      const [{ auth, db }, A, F] = await Promise.all([import('./firebase.js'), import(AUTH_URL), import(FS_URL)]);
+      const { onAuthStateChanged, signInWithEmailAndPassword, signOut } = A;
+      const { doc, getDoc, collection, query, where, limit, getDocs, onSnapshot, updateDoc, increment } = F;
+      const IDLE_MS = 15 * 60 * 1000;
+      const MAX = 99;
+      let adminUid = null, idleTimer = null, unsub = null, targetRef = null, cur = 0;
+
+      const stopTarget = () => { if (unsub) { try { unsub(); } catch (_) {} } unsub = null; targetRef = null; $('target').classList.add('hidden'); };
+      const resetIdle = () => {
+        clearTimeout(idleTimer);
+        if (adminUid) idleTimer = setTimeout(() => { show('Sessão terminada por inatividade.'); signOut(auth); }, IDLE_MS);
+      };
+      ['click', 'keydown', 'touchstart', 'mousemove'].forEach((ev) => window.addEventListener(ev, resetIdle, { passive: true }));
+
+      onAuthStateChanged(auth, async (user) => {
+        stopTarget(); adminUid = null; clearTimeout(idleTimer);
+        if (!user) {
+          $('who-text').textContent = ''; $('logout').classList.add('hidden');
+          $('panel').classList.add('hidden'); $('login').classList.remove('hidden'); return;
+        }
+        $('login').classList.add('hidden');
+        try {
+          const snap = await getDoc(doc(db, 'users', user.uid));
+          if (!snap.exists() || snap.data().tipo !== 'admin') {
+            show('Esta conta não tem permissão de administrador.'); await signOut(auth); return;
+          }
+          adminUid = user.uid;
+          $('who-text').textContent = 'Admin: ' + (snap.data().nome || 'conta') + ' ';
+          $('logout').classList.remove('hidden'); $('panel').classList.remove('hidden');
+          show(''); resetIdle();
+        } catch (e) { show('Erro: ' + (e.code || e.message)); await signOut(auth); }
+      });
+
+      const status = (t, good) => { const s = $('t-status'); s.textContent = t; s.className = good === undefined ? 'muted' : (good ? 'good' : 'bad'); };
+
+      // procurar jogador pelo nome (começo do nome, sem importar maiúsculas/minúsculas)
+      const title = (t) => t.replace(/\S+/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
+      const variants = (t) => [...new Set([t, t.toLowerCase(), t.toUpperCase(), title(t), t[0].toUpperCase() + t.slice(1)])];
+
+      function pick(d) {
+        stopTarget();
+        targetRef = d.ref;
+        $('f-res').replaceChildren();
+        $('f-name').value = d.data().nome || '';
+        unsub = onSnapshot(targetRef, (s) => {
+          const x = s.data() || {};
+          cur = Math.max(0, Math.floor(Number(x.tentativas) || 0));
+          $('t-nome').textContent = x.nome || '(sem nome)';
+          $('t-tel').textContent = (x.telefone || '') + (x.tipo === 'admin' ? ' · admin' : '');
+          $('t-n').textContent = cur;
+          const bx = $('t-box'); bx.classList.remove('pulse'); void bx.offsetWidth; bx.classList.add('pulse');
+        }, (err) => status('Erro: ' + err.code, false));
+        status('');
+        $('target').classList.remove('hidden');
+      }
+
+      async function search() {
+        const t = $('f-name').value.trim().slice(0, 40);
+        const box = $('f-res');
+        if (!adminUid || t.length < 2) { box.replaceChildren(); return; }
+        const field = /^\d+$/.test(t) ? 'telefone' : 'nome';          // se escrever só números, procura pelo telemóvel
+        const terms = field === 'telefone' ? [t, '258' + t] : variants(t);
+        try {
+          const res = await Promise.all(terms.map((v) =>
+            getDocs(query(collection(db, 'users'), where(field, '>=', v), where(field, '<=', v + '\uf8ff'), limit(6)))));
+          if (t !== $('f-name').value.trim().slice(0, 40)) return;     // resposta de uma pesquisa antiga
+          const seen = new Map();
+          res.forEach((r) => r.docs.forEach((d) => seen.set(d.id, d)));
+          show('');
+          if (!seen.size) { const p = document.createElement('div'); p.className = 'muted'; p.textContent = 'Nenhum jogador encontrado.'; box.replaceChildren(p); return; }
+          box.replaceChildren(...[...seen.values()].slice(0, 8).map((d) => {
+            const x = d.data(), b = document.createElement('button'); b.type = 'button';
+            b.textContent = x.nome || '(sem nome)';
+            const sm = document.createElement('small'); sm.textContent = x.telefone || ''; b.append(sm);
+            b.addEventListener('click', () => pick(d));
+            return b;
+          }));
+        } catch (err) {
+          show(err.code === 'permission-denied' ? 'Sem permissão para procurar jogadores (veja as regras do Firestore).' : 'Erro: ' + (err.code || err.message));
+        }
+      }
+      let searchTimer = null;
+      $('f-name').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(search, 300); });
+      $('find').addEventListener('submit', (e) => { e.preventDefault(); clearTimeout(searchTimer); search(); });
+
+      [1, 3, 5, 10].forEach((n) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (n === 3 ? ' on' : ''); b.textContent = n;
+        b.addEventListener('click', () => { $('t-qtd').value = n; document.querySelectorAll('#t-chips .chip').forEach((x) => x.classList.toggle('on', x === b)); });
+        $('t-chips').append(b);
+      });
+
+      async function send(kind) {
+        if (!adminUid || !targetRef) return;
+        const q = parseInt($('t-qtd').value, 10);
+        if (kind !== 'zero' && (isNaN(q) || q < (kind === 'add' ? 1 : 0) || q > MAX)) { status('Indique um número entre ' + (kind === 'add' ? 1 : 0) + ' e ' + MAX + '.', false); return; }
+        if (kind === 'add' && cur + q > MAX) { status('O máximo por jogador é ' + MAX + ' (tem ' + cur + ').', false); return; }
+        const btns = ['t-add', 't-set', 't-zero'].map($); btns.forEach((b) => { b.disabled = true; });
+        try {
+          await updateDoc(targetRef, { tentativas: kind === 'add' ? increment(q) : kind === 'zero' ? 0 : q });
+          status(kind === 'add' ? 'Enviadas ' + q + ' tentativas ✓' : kind === 'zero' ? 'Tentativas zeradas ✓' : 'Total definido: ' + q + ' ✓', true);
+        } catch (err) {
+          status(err.code === 'permission-denied' ? 'Sem permissão: publique as regras do Firestore para o admin escrever "tentativas".' : 'Erro: ' + (err.code || err.message), false);
+        } finally { btns.forEach((b) => { b.disabled = false; }); }
+      }
+      $('t-add').addEventListener('click', () => send('add'));
+      $('t-set').addEventListener('click', () => send('set'));
+      $('t-zero').addEventListener('click', () => send('zero'));
+
+      $('login').addEventListener('submit', async (e) => {
+        e.preventDefault(); show('');
+        const phone = $('a-phone').value.trim();
+        if (!/^\d{9}$/.test(phone)) { show('Número inválido.'); return; }
+        const btn = $('login-btn'); btn.disabled = true;
+        try { await signInWithEmailAndPassword(auth, `258${phone}@users.masterbet.example`, $('a-pass').value); }
+        catch (err) { show(err.code === 'auth/too-many-requests' ? 'Demasiadas tentativas. Aguarde alguns minutos.' : 'Número ou senha incorretos.'); }
+        finally { $('a-pass').value = ''; btn.disabled = false; }
+      });
+      $('logout').addEventListener('click', () => signOut(auth));
+    })().catch((e) => show('Erro ao iniciar: ' + (e.code || e.message || e)));
+  </script>
+</body>
+</html>

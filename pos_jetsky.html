@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JetSky – MasterBet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;800&display=swap');
+
+  :root {
+    --pink: #ff2d6b;
+    --cyan: #00e5ff;
+    --gold: #ffd700;
+    --dark: #060818;
+    --darker: #030410;
+    --purple: #7b2fff;
+    --glow-pink: 0 0 20px #ff2d6b88, 0 0 60px #ff2d6b44;
+    --glow-cyan: 0 0 20px #00e5ff88, 0 0 60px #00e5ff44;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--darker);
+    font-family: 'Exo 2', sans-serif;
+  }
+
+  /* ── STARS ── */
+  #stars-canvas {
+    position: fixed; inset: 0; z-index: 0;
+  }
+
+  /* ── WRAPPER ── */
+  .screen {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0;
+  }
+
+  /* ── LOGO AREA ── */
+  .logo-wrap {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+    animation: fadeDown .8s ease both;
+  }
+  .masterbet-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(12px, 3vw, 16px);
+    font-weight: 700;
+    letter-spacing: 6px;
+    color: #fff;
+    text-transform: uppercase;
+    opacity: .7;
+  }
+  .masterbet-label span { color: var(--pink); }
+
+  .logo-main {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(48px, 14vw, 88px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -2px;
+    color: #fff;
+    text-shadow: var(--glow-cyan);
+    position: relative;
+  }
+  .logo-main .sky {
+    color: var(--pink);
+    text-shadow: var(--glow-pink);
+  }
+  .logo-tagline {
+    font-family: 'Exo 2', sans-serif;
+    font-size: clamp(10px, 2.5vw, 13px);
+    letter-spacing: 8px;
+    color: var(--cyan);
+    text-transform: uppercase;
+    opacity: .8;
+  }
+
+  /* ── ROCKET ── */
+  .rocket-stage {
+    position: relative;
+    width: 160px; height: 160px;
+    margin: 20px 0 10px;
+    animation: fadeUp .9s .3s ease both;
+  }
+  .rocket-wrap {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    animation: rocketFloat 2.2s ease-in-out infinite;
+  }
+  .rocket-svg { width: 90px; filter: drop-shadow(0 0 16px var(--pink)); }
+
+  /* orbit ring */
+  .orbit {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0,229,255,.25);
+    animation: spinOrbit 4s linear infinite;
+  }
+  .orbit-dot {
+    position: absolute; top: -5px; left: calc(50% - 5px);
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 12px var(--cyan), 0 0 30px var(--cyan);
+  }
+
+  /* particles around rocket */
+  .particle {
+    position: absolute;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--pink);
+    animation: particlePop 1.8s ease-in-out infinite;
+  }
+  .particle:nth-child(1) { top: 30%; left: 10%; animation-delay: 0s;   background: var(--cyan); }
+  .particle:nth-child(2) { top: 60%; left: 15%; animation-delay: .4s; }
+  .particle:nth-child(3) { top: 20%; right: 12%; animation-delay: .8s;  background: var(--gold); }
+  .particle:nth-child(4) { top: 70%; right: 10%; animation-delay: 1.2s; background: var(--cyan); }
+  .particle:nth-child(5) { top: 50%; left: 5%;  animation-delay: 1.6s; background: var(--gold); }
+
+  /* ── PROGRESS ── */
+  .progress-area {
+    width: min(340px, 88vw);
+    display: flex; flex-direction: column; gap: 10px;
+    animation: fadeUp .9s .5s ease both;
+  }
+  .progress-labels {
+    display: flex; justify-content: space-between;
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: rgba(255,255,255,.45);
+  }
+  .progress-labels .pct {
+    color: var(--cyan);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+  }
+  .bar-bg {
+    width: 100%; height: 4px;
+    background: rgba(255,255,255,.08);
+    border-radius: 99px; overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%; width: 0%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--purple), var(--pink), var(--cyan));
+    box-shadow: 0 0 12px var(--pink);
+    transition: width .15s ease;
+    position: relative;
+  }
+  .bar-fill::after {
+    content: '';
+    position: absolute; right: -1px; top: -3px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan);
+    opacity: 0; transition: opacity .2s;
+  }
+  .bar-fill.active::after { opacity: 1; }
+
+  /* steps */
+  .steps {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: 4px;
+  }
+  .step {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: rgba(255,255,255,.35);
+    letter-spacing: 1px;
+    transition: color .4s, opacity .4s;
+    opacity: .5;
+  }
+  .step .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,.2);
+    flex-shrink: 0;
+    transition: background .4s, box-shadow .4s;
+  }
+  .step.done   { color: rgba(255,255,255,.6); opacity: 1; }
+  .step.done .dot { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .step.active { color: #fff; opacity: 1; }
+  .step.active .dot { background: var(--pink); box-shadow: 0 0 12px var(--pink); animation: pulse 1s ease infinite; }
+
+  /* ── BOTTOM HINT ── */
+  .hint {
+    position: fixed; bottom: 40px;
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: rgba(255,255,255,.25);
+    animation: fadeUp 1s 1s ease both, blink 2s 2s ease-in-out infinite;
+  }
+
+  /* ── HEX GRID BG ── */
+  .hex-bg {
+    position: fixed; inset: 0; z-index: 1;
+    opacity: .04;
+    background-image:
+      repeating-linear-gradient(60deg, rgba(0,229,255,.6) 0, rgba(0,229,255,.6) 1px, transparent 0, transparent 50%),
+      repeating-linear-gradient(120deg, rgba(0,229,255,.6) 0, rgba(0,229,255,.6) 1px, transparent 0, transparent 50%),
+      repeating-linear-gradient(0deg, rgba(0,229,255,.6) 0, rgba(0,229,255,.6) 1px, transparent 0, transparent 50%);
+    background-size: 40px 40px;
+  }
+
+  /* ── VIGNETTE ── */
+  .vignette {
+    position: fixed; inset: 0; z-index: 2;
+    background: radial-gradient(ellipse at center, transparent 40%, #030410 100%);
+    pointer-events: none;
+  }
+
+  /* ── FLASH OVERLAY (on complete) ── */
+  .flash {
+    position: fixed; inset: 0; z-index: 100;
+    background: #fff;
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s;
+  }
+
+  /* ── KEYFRAMES ── */
+  @keyframes fadeDown {
+    from { opacity:0; transform: translateY(-30px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(30px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  @keyframes rocketFloat {
+    0%,100% { transform: translateY(0) rotate(-8deg); }
+    50%      { transform: translateY(-14px) rotate(-8deg); }
+  }
+  @keyframes spinOrbit {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  @keyframes particlePop {
+    0%,100% { transform: scale(1); opacity: .6; }
+    50%     { transform: scale(1.8); opacity: 1; }
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 8px var(--pink); }
+    50%     { box-shadow: 0 0 18px var(--pink), 0 0 30px var(--pink); }
+  }
+  @keyframes blink {
+    0%,100% { opacity: .25; }
+    50%     { opacity: .55; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+<div class="hex-bg"></div>
+<div class="vignette"></div>
+<div class="flash" id="flash"></div>
+
+<div class="screen">
+
+  <!-- LOGO -->
+  <div class="logo-wrap">
+    <div class="masterbet-label">MASTER<span>BET</span></div>
+    <div class="logo-main">JET<span class="sky">SKY</span></div>
+    <div class="logo-tagline">🚀 Aposte · Voe · Ganhe</div>
+  </div>
+
+  <!-- ROCKET -->
+  <div class="rocket-stage">
+    <div class="orbit">
+      <div class="orbit-dot"></div>
+    </div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="rocket-wrap">
+      <!-- inline SVG rocket -->
+      <svg class="rocket-svg" viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- body -->
+        <path d="M50 5 C30 20 22 55 22 80 L50 95 L78 80 C78 55 70 20 50 5Z" fill="url(#rg1)"/>
+        <!-- window -->
+        <circle cx="50" cy="52" r="13" fill="#0af" opacity=".9"/>
+        <circle cx="50" cy="52" r="9" fill="#0cf" opacity=".5"/>
+        <!-- fins left -->
+        <path d="M22 80 L8 100 L25 90Z" fill="#ff2d6b"/>
+        <!-- fins right -->
+        <path d="M78 80 L92 100 L75 90Z" fill="#ff2d6b"/>
+        <!-- flame -->
+        <ellipse cx="50" cy="105" rx="12" ry="18" fill="url(#fg1)" opacity=".9">
+          <animate attributeName="ry" values="18;26;16;28;18" dur=".6s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".9;1;.7;1;.9" dur=".5s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="50" cy="108" rx="6" ry="12" fill="#fff" opacity=".6">
+          <animate attributeName="ry" values="12;18;10;20;12" dur=".5s" repeatCount="indefinite"/>
+        </ellipse>
+        <defs>
+          <linearGradient id="rg1" x1="50" y1="5" x2="50" y2="95" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#c0c8ff"/>
+          </linearGradient>
+          <linearGradient id="fg1" x1="50" y1="88" x2="50" y2="123" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#ff2d6b"/>
+            <stop offset="60%" stop-color="#ff9900"/>
+            <stop offset="100%" stop-color="#ffee00" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-area">
+    <div class="progress-labels">
+      <span>Carregando sistema</span>
+      <span class="pct" id="pct">0%</span>
+    </div>
+    <div class="bar-bg">
+      <div class="bar-fill active" id="bar"></div>
+    </div>
+    <div class="steps" id="steps">
+      <div class="step" id="s0"><div class="dot"></div>Conectando ao servidor</div>
+      <div class="step" id="s1"><div class="dot"></div>Verificando sessão</div>
+      <div class="step" id="s2"><div class="dot"></div>Carregando motor de apostas</div>
+      <div class="step" id="s3"><div class="dot"></div>Sincronizando jogadores ao vivo</div>
+      <div class="step" id="s4"><div class="dot"></div>Preparando para decolar 🚀</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="hint">Aguarde enquanto preparamos o voo…</div>
+
+<script>
+/* ── STARFIELD ── */
+(function(){
+  const c = document.getElementById('stars-canvas');
+  const ctx = c.getContext('2d');
+  let W, H, stars = [];
+
+  function resize(){
+    W = c.width  = window.innerWidth;
+    H = c.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for(let i=0;i<220;i++){
+    stars.push({
+      x: Math.random(), y: Math.random(),
+      r: Math.random()*1.6+.2,
+      a: Math.random(),
+      spd: Math.random()*.004+.001,
+      drift: (Math.random()-.5)*.0003
+    });
+  }
+
+  function drawStars(){
+    ctx.clearRect(0,0,W,H);
+    stars.forEach(s=>{
+      s.a += s.spd; if(s.a>1) s.a=0;
+      s.x += s.drift; if(s.x<0) s.x=1; if(s.x>1) s.x=0;
+      const alpha = Math.sin(s.a*Math.PI);
+      ctx.beginPath();
+      ctx.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(200,220,255,${alpha*.9})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(drawStars);
+  }
+  drawStars();
+})();
+
+/* ── SHOOTING STARS ── */
+(function(){
+  const c = document.getElementById('stars-canvas');
+  const ctx = c.getContext('2d');
+  function shoot(){
+    const x = Math.random()*c.width;
+    const y = Math.random()*c.height*.5;
+    const len = 80+Math.random()*120;
+    const angle = Math.PI/6;
+    let prog = 0;
+    function draw(){
+      prog += 4;
+      if(prog>len+40) return;
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.rotate(angle);
+      const grad = ctx.createLinearGradient(prog-40,0,prog,0);
+      grad.addColorStop(0,'rgba(0,229,255,0)');
+      grad.addColorStop(1,'rgba(0,229,255,.8)');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(Math.max(0,prog-40),0);
+      ctx.lineTo(prog,0);
+      ctx.stroke();
+      ctx.restore();
+      requestAnimationFrame(draw);
+    }
+    draw();
+    setTimeout(shoot, 1200+Math.random()*2500);
+  }
+  setTimeout(shoot, 800);
+})();
+
+/* ── PROGRESS LOGIC ── */
+const bar   = document.getElementById('bar');
+const pctEl = document.getElementById('pct');
+const stepEls = [0,1,2,3,4].map(i=>document.getElementById('s'+i));
+
+const stages = [
+  { to: 18,  step: 0, dur: 700  },
+  { to: 38,  step: 1, dur: 900  },
+  { to: 60,  step: 2, dur: 1100 },
+  { to: 82,  step: 3, dur: 900  },
+  { to: 100, step: 4, dur: 700  },
+];
+
+let currentPct = 0;
+
+function activateStep(idx){
+  stepEls.forEach((el, i)=>{
+    if(i < idx)       el.className='step done';
+    else if(i===idx)  el.className='step active';
+    else              el.className='step';
+  });
+}
+
+function animateTo(target, dur, callback){
+  const start = currentPct;
+  const t0 = performance.now();
+  function tick(now){
+    const p = Math.min((now-t0)/dur, 1);
+    const ease = 1 - Math.pow(1-p, 3);
+    currentPct = start + (target-start)*ease;
+    bar.style.width = currentPct+'%';
+    pctEl.textContent = Math.round(currentPct)+'%';
+    if(p<1) requestAnimationFrame(tick);
+    else { currentPct=target; callback && callback(); }
+  }
+  requestAnimationFrame(tick);
+}
+
+function runStages(i){
+  if(i >= stages.length){ finish(); return; }
+  const s = stages[i];
+  activateStep(s.step);
+  setTimeout(()=>{
+    animateTo(s.to, s.dur, ()=>{
+      stepEls[s.step].className='step done';
+      setTimeout(()=>runStages(i+1), 180);
+    });
+  }, 200);
+}
+
+function finish(){
+  // mark all done
+  stepEls.forEach(el=>el.className='step done');
+  bar.classList.remove('active');
+  bar.style.boxShadow='0 0 20px var(--cyan), 0 0 40px var(--cyan)';
+
+  setTimeout(()=>{
+    const flash = document.getElementById('flash');
+    flash.style.opacity = '1';
+    setTimeout(()=>{
+      window.location.href = 'jetsky.html';
+    }, 350);
+  }, 600);
+}
+
+// kick off after short delay
+setTimeout(()=>runStages(0), 600);
+</script>
+</body>
+</html>

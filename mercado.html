@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeUS — Carregando</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #050a14;
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,200,120,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,120,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+  }
+
+  .bg-glow {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(0,200,120,0.07) 0%, transparent 70%);
+    z-index: 0;
+  }
+
+  .particles {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    animation: floatUp linear infinite;
+    opacity: 0;
+  }
+
+  @keyframes floatUp {
+    0%   { transform: translateY(0) scale(1); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(-100vh) scale(0.3); opacity: 0; }
+  }
+
+  .center {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 420px;
+  }
+
+  .logo-ring {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    margin-bottom: 2rem;
+  }
+
+  .logo-ring svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ring-outer { animation: spinCW 3s linear infinite; transform-origin: center; }
+  .ring-inner { animation: spinCCW 2s linear infinite; transform-origin: center; }
+  .ring-pulse { animation: pulseRing 2s ease-in-out infinite; transform-origin: center; }
+
+  @keyframes spinCW  { to { transform: rotate(360deg); } }
+  @keyframes spinCCW { to { transform: rotate(-360deg); } }
+  @keyframes pulseRing {
+    0%, 100% { opacity: 0.3; transform: scale(0.95); }
+    50%       { opacity: 1;   transform: scale(1.05); }
+  }
+
+  .logo-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #00e087;
+    letter-spacing: -2px;
+    animation: glowText 2s ease-in-out infinite;
+  }
+
+  @keyframes glowText {
+    0%, 100% { text-shadow: 0 0 20px rgba(0,224,135,0.4); }
+    50%       { text-shadow: 0 0 50px rgba(0,224,135,0.9), 0 0 80px rgba(0,224,135,0.3); }
+  }
+
+  .title {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #ffffff;
+    text-align: center;
+    margin-bottom: 0.3rem;
+  }
+
+  .title span { color: #00e087; }
+
+  .subtitle {
+    font-size: 0.78rem;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .progress-wrap { width: 100%; margin-bottom: 0.8rem; }
+
+  .progress-track {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00b366, #00e087, #00ffaa);
+    border-radius: 99px;
+    transition: width 0.15s ease;
+    position: relative;
+  }
+
+  .progress-bar::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: #00ffaa;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00ffaa, 0 0 20px #00ffaa;
+  }
+
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .status-text {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1px;
+    min-height: 1rem;
+  }
+
+  .percent-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #00e087;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chart-preview {
+    width: 100%;
+    height: 60px;
+    margin-top: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .chart-preview::before,
+  .chart-preview::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 40px;
+    z-index: 2;
+  }
+  .chart-preview::before { left: 0; background: linear-gradient(90deg, #050a14, transparent); }
+  .chart-preview::after  { right: 0; background: linear-gradient(-90deg, #050a14, transparent); }
+
+  .candles {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 100%;
+    animation: slideCandles 4s linear infinite;
+    width: max-content;
+  }
+
+  @keyframes slideCandles {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .candle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+
+  .candle-wick { width: 1px; opacity: 0.5; }
+  .candle-body { width: 8px; border-radius: 1px; }
+
+  .bull .candle-body { background: #00e087; }
+  .bull .candle-wick { background: #00e087; }
+  .bear .candle-body { background: #ff4e6a; }
+  .bear .candle-wick { background: #ff4e6a; }
+
+  .metrics {
+    display: flex;
+    gap: 20px;
+    margin-top: 2rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .metric-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .metric-pair {
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+  }
+
+  .metric-val {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    animation: tickValue 1.5s ease-in-out infinite alternate;
+  }
+
+  .metric-val.up   { color: #00e087; }
+  .metric-val.down { color: #ff4e6a; }
+
+  @keyframes tickValue {
+    from { opacity: 0.7; }
+    to   { opacity: 1; }
+  }
+
+  .metric-chg { font-size: 0.62rem; color: rgba(255,255,255,0.25); }
+  .metric-chg.up   { color: rgba(0,224,135,0.6); }
+  .metric-chg.down { color: rgba(255,78,106,0.6); }
+
+  .divider {
+    width: 1px;
+    height: 30px;
+    background: rgba(255,255,255,0.08);
+    align-self: center;
+  }
+
+  .dots { display: flex; gap: 6px; margin-top: 1.8rem; }
+
+  .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(0,224,135,0.3);
+    animation: dotPulse 1.2s ease-in-out infinite;
+  }
+
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  .dot:nth-child(4) { animation-delay: 0.6s; }
+  .dot:nth-child(5) { animation-delay: 0.8s; }
+
+  @keyframes dotPulse {
+    0%, 100% { background: rgba(0,224,135,0.2); transform: scale(1); }
+    50%       { background: rgba(0,224,135,1);   transform: scale(1.6); }
+  }
+
+  .scan-line {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,224,135,0.6), transparent);
+    z-index: 5;
+    animation: scanDown 3s ease-in-out infinite;
+  }
+
+  @keyframes scanDown {
+    0%   { top: 0%; opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 0.4; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  .corner { position: fixed; width: 50px; height: 50px; z-index: 5; }
+  .corner svg { width: 100%; height: 100%; }
+  .corner.tl { top: 20px; left: 20px; }
+  .corner.tr { top: 20px; right: 20px; transform: scaleX(-1); }
+  .corner.bl { bottom: 20px; left: 20px; transform: scaleY(-1); }
+  .corner.br { bottom: 20px; right: 20px; transform: scale(-1); }
+
+  .flash {
+    position: fixed;
+    inset: 0;
+    background: #050a14;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  .flash.active { opacity: 1; pointer-events: all; }
+</style>
+</head>
+<body>
+
+<div class="scan-line"></div>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="particles" id="particles"></div>
+
+<div class="corner tl">
+  <svg viewBox="0 0 50 50" fill="none">
+    <path d="M2 30 L2 2 L30 2" stroke="rgba(0,224,135,0.4)" stroke-width="1.5" fill="none"/>
+    <circle cx="2" cy="2" r="2" fill="#00e087" opacity="0.6"/>
+  </svg>
+</div>
+<div class="corner tr">
+  <svg viewBox="0 0 50 50" fill="none">
+    <path d="M2 30 L2 2 L30 2" stroke="rgba(0,224,135,0.4)" stroke-width="1.5" fill="none"/>
+    <circle cx="2" cy="2" r="2" fill="#00e087" opacity="0.6"/>
+  </svg>
+</div>
+<div class="corner bl">
+  <svg viewBox="0 0 50 50" fill="none">
+    <path d="M2 30 L2 2 L30 2" stroke="rgba(0,224,135,0.4)" stroke-width="1.5" fill="none"/>
+    <circle cx="2" cy="2" r="2" fill="#00e087" opacity="0.6"/>
+  </svg>
+</div>
+<div class="corner br">
+  <svg viewBox="0 0 50 50" fill="none">
+    <path d="M2 30 L2 2 L30 2" stroke="rgba(0,224,135,0.4)" stroke-width="1.5" fill="none"/>
+    <circle cx="2" cy="2" r="2" fill="#00e087" opacity="0.6"/>
+  </svg>
+</div>
+
+<div class="flash" id="flash"></div>
+
+<div class="center">
+  <div class="logo-ring">
+    <svg viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g class="ring-outer">
+        <circle cx="65" cy="65" r="60" stroke="rgba(0,224,135,0.15)" stroke-width="1"/>
+        <circle cx="65" cy="65" r="60"
+          stroke="#00e087" stroke-width="1.5"
+          stroke-dasharray="10 8"
+          stroke-linecap="round"
+          opacity="0.5"/>
+      </g>
+      <g class="ring-inner">
+        <circle cx="65" cy="65" r="46" stroke="rgba(0,224,135,0.1)" stroke-width="1"/>
+        <circle cx="65" cy="65" r="46"
+          stroke="#00e087" stroke-width="1"
+          stroke-dasharray="4 14"
+          stroke-linecap="round"
+          opacity="0.7"/>
+      </g>
+      <g class="ring-pulse">
+        <circle cx="65" cy="65" r="32" stroke="#00e087" stroke-width="0.8" opacity="0.4"/>
+      </g>
+      <circle cx="65" cy="65" r="26" fill="rgba(0,224,135,0.08)"/>
+    </svg>
+    <div class="logo-icon">FX</div>
+  </div>
+
+  <div class="title">Trade<span>PA</span></div>
+  <div class="subtitle">Trading Platform</div>
+
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span class="status-text" id="statusText">Inicializando sistema...</span>
+      <span class="percent-text" id="percentText">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+  </div>
+
+  <div class="chart-preview">
+    <div class="candles" id="candles"></div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric-item">
+      <span class="metric-pair">EUR/USD</span>
+      <span class="metric-val up" id="m1">1.0847</span>
+      <span class="metric-chg up" id="c1">▲ +0.12%</span>
+    </div>
+    <div class="divider"></div>
+    <div class="metric-item">
+      <span class="metric-pair">GBP/USD</span>
+      <span class="metric-val down" id="m2">1.2631</span>
+      <span class="metric-chg down" id="c2">▼ −0.08%</span>
+    </div>
+    <div class="divider"></div>
+    <div class="metric-item">
+      <span class="metric-pair">USD/JPY</span>
+      <span class="metric-val up" id="m3">149.32</span>
+      <span class="metric-chg up" id="c3">▲ +0.23%</span>
+    </div>
+    <div class="divider"></div>
+    <div class="metric-item">
+      <span class="metric-pair">XAU/USD</span>
+      <span class="metric-val up" id="m4">2341.5</span>
+      <span class="metric-chg up" id="c4">▲ +0.45%</span>
+    </div>
+  </div>
+
+  <div class="dots">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+</div>
+
+<script>
+const pContainer = document.getElementById('particles');
+for (let i = 0; i < 35; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  const size = Math.random() * 3 + 1;
+  const isGreen = Math.random() > 0.4;
+  p.style.cssText = `
+    width:${size}px; height:${size}px;
+    left:${Math.random()*100}%;
+    top:${Math.random()*100}%;
+    background:${isGreen ? '#00e087' : '#ffffff'};
+    opacity:0;
+    animation-duration:${Math.random()*10+8}s;
+    animation-delay:${Math.random()*10}s;
+  `;
+  pContainer.appendChild(p);
+}
+
+function makeCandle(isBull, bodyH, wickTop, wickBot) {
+  const div = document.createElement('div');
+  div.className = `candle ${isBull ? 'bull' : 'bear'}`;
+  div.innerHTML = `
+    <div class="candle-wick" style="height:${wickTop}px"></div>
+    <div class="candle-body" style="height:${bodyH}px"></div>
+    <div class="candle-wick" style="height:${wickBot}px"></div>
+  `;
+  return div;
+}
+
+const candlesEl = document.getElementById('candles');
+for (let i = 0; i < 50; i++) {
+  const bull = Math.random() > 0.45;
+  candlesEl.appendChild(makeCandle(bull, Math.random()*20+6, Math.random()*8+2, Math.random()*8+2));
+}
+for (let i = 0; i < 50; i++) {
+  const bull = Math.random() > 0.45;
+  candlesEl.appendChild(makeCandle(bull, Math.random()*20+6, Math.random()*8+2, Math.random()*8+2));
+}
+
+const steps = [
+  { pct: 8,  msg: 'Inicializando sistema...' },
+  { pct: 18, msg: 'Conectando servidores...' },
+  { pct: 31, msg: 'Carregando pares de moedas...' },
+  { pct: 47, msg: 'Sincronizando dados de mercado...' },
+  { pct: 58, msg: 'Configurando gráficos em tempo real...' },
+  { pct: 70, msg: 'Carregando indicadores técnicos...' },
+  { pct: 82, msg: 'Aplicando configurações do usuário...' },
+  { pct: 91, msg: 'Verificando conexão segura...' },
+  { pct: 97, msg: 'Quase pronto...' },
+  { pct: 100, msg: 'Entrando na plataforma!' },
+];
+
+const bar = document.getElementById('progressBar');
+const pct = document.getElementById('percentText');
+const st  = document.getElementById('statusText');
+let si = 0;
+
+function nextStep() {
+  if (si >= steps.length) return;
+  const s = steps[si++];
+  bar.style.width = s.pct + '%';
+  pct.textContent = s.pct + '%';
+  st.textContent  = s.msg;
+  if (s.pct < 100) {
+    const delay = si < 4 ? 400 : si < 7 ? 600 : si < 9 ? 800 : 1000;
+    setTimeout(nextStep, delay);
+  } else {
+    setTimeout(() => {
+      document.getElementById('flash').classList.add('active');
+      setTimeout(() => { window.location.href = 'forex.html'; }, 600);
+    }, 900);
+  }
+}
+setTimeout(nextStep, 500);
+
+const pairs = [
+  { el: document.getElementById('m1'), cel: document.getElementById('c1'), base: 1.0847, pip: 0.0001 },
+  { el: document.getElementById('m2'), cel: document.getElementById('c2'), base: 1.2631, pip: 0.0001 },
+  { el: document.getElementById('m3'), cel: document.getElementById('c3'), base: 149.32, pip: 0.01 },
+  { el: document.getElementById('m4'), cel: document.getElementById('c4'), base: 2341.5,  pip: 0.1 },
+];
+
+function tickPrices() {
+  pairs.forEach(p => {
+    const change = (Math.random() - 0.48) * p.pip * 3;
+    p.base += change;
+    const decimals = p.pip < 0.001 ? 4 : p.pip < 0.1 ? 2 : 1;
+    p.el.textContent = p.base.toFixed(decimals);
+    const chgPct = ((change / (p.base - change)) * 100);
+    const abs = Math.abs(chgPct).toFixed(2);
+    if (chgPct >= 0) {
+      p.el.className = 'metric-val up';
+      p.cel.className = 'metric-chg up';
+      p.cel.textContent = `▲ +${abs}%`;
+    } else {
+      p.el.className = 'metric-val down';
+      p.cel.className = 'metric-chg down';
+      p.cel.textContent = `▼ −${abs}%`;
+    }
+  });
+}
+setInterval(tickPrices, 1200);
+</script>
+</body>
+</html>

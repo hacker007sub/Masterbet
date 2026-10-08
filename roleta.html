@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Master Bet Casino – Gira & Ganha</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #FFD700;
+    --gold-dark: #B8860B;
+    --gold-light: #FFF0A0;
+    --red: #CC0000;
+    --red-bright: #FF2222;
+    --orange: #FF6600;
+    --blue-bright: #1A6FFF;
+    --purple: #7B2FBE;
+    --green-win: #00B843;
+    --dark-bg: #0A0A1A;
+    --panel-bg: #10102A;
+    --card-bg: #1A1A35;
+    --text: #F0E6C8;
+    --muted: #7A7090;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--dark-bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    overflow-x: hidden;
+    user-select: none;
+  }
+
+  .scanlines {
+    pointer-events: none;
+    position: fixed; inset: 0; z-index: 999;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.07) 3px,
+      rgba(0,0,0,0.07) 4px
+    );
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px 6px;
+    background: linear-gradient(180deg,#18102e 0%,#0d0920 100%);
+    border-bottom: 2px solid var(--gold-dark);
+  }
+  .logo {
+    display: flex; flex-direction: column; line-height: 1;
+  }
+  .logo-main {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px; letter-spacing: 3px;
+    background: linear-gradient(135deg, #FFD700, #FF9500, #FFD700);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-shadow: none;
+  }
+  .logo-sub {
+    font-size: 10px; letter-spacing: 5px; color: var(--muted);
+    text-transform: uppercase; font-weight: 600;
+  }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .balance-label { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .balance-val {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px; font-weight: 700; color: var(--gold);
+    letter-spacing: 1px;
+  }
+  .balance-cur { font-size: 13px; color: var(--gold-dark); margin-left: 3px; }
+
+  /* ── TICKER ── */
+  .ticker-wrap {
+    overflow: hidden; background: #0d0920;
+    border-bottom: 1px solid #2a1f50;
+    padding: 4px 0;
+  }
+  .ticker {
+    display: flex; gap: 40px;
+    animation: ticker 22s linear infinite;
+    width: max-content;
+  }
+  @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  .ticker-item { font-size: 11px; color: var(--muted); letter-spacing: 1px; white-space: nowrap; }
+  .ticker-item span { color: var(--gold); font-weight: 700; }
+
+  /* ── GAME AREA ── */
+  .game-area {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 0 0;
+    min-height: calc(100vh - 60px);
+    background: radial-gradient(ellipse at 50% 20%, #1e1040 0%, #090918 60%);
+  }
+
+  /* ── MULTIPLIER DISPLAY ── */
+  .multiplier-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 54px; letter-spacing: 4px;
+    color: var(--gold);
+    text-align: center;
+    min-height: 64px; line-height: 1;
+    text-shadow: 0 0 30px rgba(255,215,0,0.5), 0 0 60px rgba(255,165,0,0.2);
+    transition: all 0.3s;
+    position: relative;
+  }
+  .multiplier-display.pop {
+    animation: popAnim 0.5s ease-out;
+  }
+  @keyframes popAnim {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
+  /* ── WHEEL CONTAINER ── */
+  .wheel-container {
+    position: relative;
+    width: 330px; height: 330px;
+    margin: 6px auto 8px;
+  }
+
+  /* pointer */
+  .pointer {
+    position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 32px solid var(--gold);
+    filter: drop-shadow(0 4px 8px rgba(255,215,0,0.8));
+    z-index: 20;
+  }
+  .pointer::after {
+    content:'';
+    position: absolute;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--gold-light);
+    top: -38px; left: -6px;
+    box-shadow: 0 0 8px var(--gold);
+  }
+
+  canvas#wheelCanvas {
+    border-radius: 50%;
+    box-shadow: 0 0 0 6px #2a1a50, 0 0 0 10px var(--gold-dark), 0 0 40px rgba(255,165,0,0.3);
+  }
+
+  /* center hub */
+  .hub {
+    position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 80px; height: 80px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #2a1f50, #0d0920);
+    border: 3px solid var(--gold-dark);
+    box-shadow: 0 0 20px rgba(255,165,0,0.4), inset 0 0 20px rgba(0,0,0,0.6);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 10;
+  }
+  .hub-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 11px; letter-spacing: 2px;
+    color: var(--gold); text-align: center; line-height: 1.1;
+  }
+  .hub-stars { font-size: 10px; color: var(--gold-dark); letter-spacing: 2px; }
+
+  /* outer ring lights */
+  .ring-lights {
+    position: absolute; inset: 0; border-radius: 50%;
+    pointer-events: none; z-index: 1;
+  }
+
+  /* ── WIN OVERLAY ── */
+  .win-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.85);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .win-overlay.show { opacity: 1; pointer-events: all; }
+  .win-burst {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 4px; color: var(--gold);
+    text-transform: uppercase;
+  }
+  .win-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px; line-height: 1; letter-spacing: 6px;
+    background: linear-gradient(135deg,#FFD700,#FF9500,#FFD700);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-shadow: none;
+    animation: pulseGold 1.2s ease-in-out infinite;
+  }
+  @keyframes pulseGold {
+    0%,100%{filter:brightness(1)} 50%{filter:brightness(1.5)}
+  }
+  .win-sub { font-size: 14px; color: var(--muted); letter-spacing: 3px; }
+  .win-close {
+    background: var(--gold);
+    color: #000;
+    border: none; border-radius: 8px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px; font-weight: 700;
+    padding: 12px 40px; cursor: pointer;
+    letter-spacing: 2px;
+    transition: transform 0.1s;
+  }
+  .win-close:active { transform: scale(0.95); }
+  .confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 201; }
+
+  /* ── BOTTOM PANEL ── */
+  .bottom-panel {
+    width: 100%; max-width: 420px;
+    padding: 10px 16px 24px;
+  }
+
+  /* recent results row */
+  .recent-row {
+    display: flex; gap: 6px; margin-bottom: 12px;
+    overflow-x: auto; padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .recent-row::-webkit-scrollbar { display: none; }
+  .rr-badge {
+    flex-shrink: 0;
+    width: 38px; height: 38px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.5px;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    position: relative; overflow: hidden;
+  }
+  .rr-badge.great { background: linear-gradient(135deg,#1A6FFF,#003fa3); color: #fff; }
+  .rr-badge.good  { background: linear-gradient(135deg,#cc0000,#7a0000); color: #fff; }
+  .rr-badge.mid   { background: linear-gradient(135deg,#FF6600,#993d00); color: #fff; }
+  .rr-badge.low   { background: linear-gradient(135deg,#333,#1a1a1a); color: #aaa; }
+  .rr-badge.gift  { background: linear-gradient(135deg,#7B2FBE,#4a1a80); color: #fff; }
+
+  /* Bet controls */
+  .bet-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .bet-block {
+    background: var(--card-bg);
+    border: 1px solid #2a1f50;
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
+  .bet-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+  .bet-input-row { display: flex; align-items: center; gap: 6px; }
+  .bet-btn {
+    width: 30px; height: 30px; border-radius: 6px;
+    background: #2a1f50; border: 1px solid var(--gold-dark);
+    color: var(--gold); font-size: 18px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .bet-btn:active { background: var(--gold-dark); }
+  .bet-val {
+    flex: 1; text-align: center;
+    font-family: 'Oswald', sans-serif; font-size: 20px; font-weight: 700;
+    color: var(--text); letter-spacing: 1px;
+  }
+
+  .limit-note { text-align:center; font-size:11px; line-height:1.4; color:#8b8fa8; margin:-2px 0 10px; }
+  .limit-note b { color:#cfd2e6; font-weight:600; }
+
+  /* quick bets */
+  .quick-bets { display: flex; gap: 6px; margin-bottom: 10px; }
+  .qb {
+    flex: 1; height: 36px; border-radius: 8px;
+    background: var(--card-bg); border: 1px solid #2a1f50;
+    color: var(--muted); font-family: 'Oswald', sans-serif; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    letter-spacing: 1px;
+  }
+  .qb:hover, .qb.active { background: #2a1f50; color: var(--gold); border-color: var(--gold-dark); }
+
+  /* autoplay row */
+  .auto-row {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .auto-btn {
+    flex: 1; height: 36px; border-radius: 8px;
+    background: var(--card-bg); border: 1px solid #2a1f50;
+    color: var(--muted); font-family: 'Oswald', sans-serif; font-size: 13px;
+    cursor: pointer; letter-spacing: 1px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .auto-btn.active, .auto-btn:hover { color: var(--gold); border-color: var(--gold-dark); background: #1e1535; }
+  .auto-btn svg { width: 14px; height: 14px; }
+
+  /* SPIN button */
+  .spin-btn {
+    width: 100%; height: 58px; border-radius: 12px;
+    background: linear-gradient(135deg, #FF6600, #CC0000, #FF6600);
+    border: none; cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px; letter-spacing: 6px; color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 20px rgba(255,100,0,0.5), 0 2px 0 #7a0000;
+    transition: all 0.15s;
+    position: relative; overflow: hidden;
+  }
+  .spin-btn:active { transform: translateY(2px); box-shadow: 0 2px 10px rgba(255,100,0,0.4), 0 0 0 #7a0000; }
+  .spin-btn:disabled {
+    background: #333; box-shadow: none;
+    color: #666; cursor: not-allowed;
+  }
+  .spin-btn::before {
+    content: '';
+    position: absolute; top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent);
+    animation: sheen 2.5s ease-in-out infinite;
+  }
+  @keyframes sheen { 0%{left:-100%} 100%{left:200%} }
+  .spin-btn:disabled::before { display: none; }
+
+  /* stats bar */
+  .stats-bar {
+    display: flex; justify-content: space-around;
+    margin-top: 12px; padding: 10px;
+    background: var(--card-bg); border-radius: 10px;
+    border: 1px solid #1a1535;
+  }
+  .stat-item { text-align: center; }
+  .stat-n { font-family: 'Oswald', sans-serif; font-size: 18px; color: var(--gold); font-weight: 700; }
+  .stat-l { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* toast */
+  .toast {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1a1535; border: 1px solid var(--gold-dark);
+    color: var(--text); padding: 10px 24px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; letter-spacing: 1px;
+    opacity: 0; transition: all 0.3s; z-index: 100; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .ring-outer {
+    position: absolute; inset: -6px; border-radius: 50%;
+    border: 6px solid var(--gold-dark);
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+  }
+
+  /* ── JOGADOR / HISTÓRICO (Firebase) ── */
+  .head-left { display:flex; align-items:center; gap:10px; }
+  .back-link { color: var(--gold); text-decoration:none; font-size:28px; line-height:1; padding:0 4px; }
+  .user-line { display:flex; align-items:center; gap:8px; max-width:100%; }
+  .user-name { font-size:12px; font-weight:700; color:var(--text); max-width:140px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:.5px; }
+  .user-id { font-size:9px; color:var(--muted); letter-spacing:1px; }
+  .dep-btn { background:linear-gradient(135deg,#FFD700,#FF9500); color:#1a1030; font-weight:700;
+    border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+    text-decoration:none; font-size:15px; line-height:1; }
+  .hist-box { width:100%; margin-top:12px; padding:10px 12px; background:#0d0920; border:1px solid #2a1f50; border-radius:10px; }
+  .hist-title { font-size:11px; color:var(--muted); letter-spacing:3px; text-transform:uppercase; margin-bottom:6px; }
+  .hist-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .hist-table td { padding:5px 4px; border-bottom:1px solid #1d1740; color:var(--text); }
+  .hist-table td:last-child { text-align:right; font-weight:700; }
+  .hist-win { color:#00B843 !important; }
+  .hist-loss { color:#FF4444 !important; }
+  .hist-empty { text-align:center; color:var(--muted) !important; padding:10px 0 !important; }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<!-- WIN OVERLAY -->
+<div class="win-overlay" id="winOverlay">
+  <div class="win-burst">✦ VITÓRIA ✦</div>
+  <div class="win-amount" id="winAmount">x10</div>
+  <div class="win-sub" id="winSub">+0.00 MZN</div>
+  <button class="win-close" onclick="closeWin()">CONTINUAR</button>
+</div>
+<canvas class="confetti-canvas" id="confettiCanvas"></canvas>
+
+<!-- HEADER -->
+<header>
+  <div class="head-left">
+    <a href="jogos.html" class="back-link" aria-label="Voltar">&#8249;</a>
+    <div class="logo">
+      <div class="logo-main">MASTER BET</div>
+      <div class="logo-sub">Casino &amp; Slots</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="user-line">
+      <span class="user-name" id="userName">A carregar...</span>
+      <a class="dep-btn" href="jogos.html#deposito" aria-label="Depositar">+</a>
+    </div>
+    <div class="user-id" id="userId">ID: —</div>
+    <div class="balance-label">Saldo</div>
+    <div class="balance-val"><span id="balanceDisplay">0.00</span><span class="balance-cur">MZN</span></div>
+  </div>
+</header>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <div class="ticker-item">🏆 <span>JACKPOT: 45.000 MZN</span></div>
+    <div class="ticker-item">⚡ JOAO G. ganhou <span>x24</span> → +2.400 MZN</div>
+    <div class="ticker-item">🎰 CARLOS M. ganhou <span>x10</span> → +1.000 MZN</div>
+    <div class="ticker-item">💎 ANA T. ganhou <span>888 GIFT</span></div>
+    <div class="ticker-item">⭐ TOTAL PAGO HOJE: <span>198.450 MZN</span></div>
+    <div class="ticker-item">🏆 <span>JACKPOT: 45.000 MZN</span></div>
+    <div class="ticker-item">⚡ JOAO G. ganhou <span>x24</span> → +2.400 MZN</div>
+    <div class="ticker-item">🎰 CARLOS M. ganhou <span>x10</span> → +1.000 MZN</div>
+    <div class="ticker-item">💎 ANA T. ganhou <span>888 GIFT</span></div>
+    <div class="ticker-item">⭐ TOTAL PAGO HOJE: <span>198.450 MZN</span></div>
+  </div>
+</div>
+
+<!-- GAME AREA -->
+<div class="game-area">
+  <div class="multiplier-display" id="multDisplay">x 0.00</div>
+
+  <div class="wheel-container" id="wheelContainer">
+    <div class="pointer"></div>
+    <canvas id="wheelCanvas" width="330" height="330"></canvas>
+    <div class="hub">
+      <div class="hub-logo">MASTER<br>BET</div>
+      <div class="hub-stars">★ ★ ★</div>
+    </div>
+  </div>
+
+  <!-- BOTTOM PANEL -->
+  <div class="bottom-panel">
+
+    <!-- recent results -->
+    <div class="recent-row" id="recentRow"></div>
+
+    <!-- bet controls -->
+    <div class="bet-row">
+      <div class="bet-block">
+        <div class="bet-label">Aposta (MZN)</div>
+        <div class="bet-input-row">
+          <button class="bet-btn" onclick="changeBet(-10)">−</button>
+          <div class="bet-val" id="betVal">10</div>
+          <button class="bet-btn" onclick="changeBet(10)">+</button>
+        </div>
+      </div>
+      <div class="bet-block">
+        <div class="bet-label">Aposta Rápida</div>
+        <div style="display:flex;gap:5px;margin-top:4px">
+          <button class="qb" onclick="setQuickBet(20)">20</button>
+          <button class="qb" onclick="setQuickBet(50)">50</button>
+          <button class="qb" onclick="setQuickBet(100)">100</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="limit-note">Aposta máx. <b>500,00 MZN</b> · Prémio máx. <b>5.000,00 MZN</b> por rodada</div>
+
+    <div class="auto-row">
+      <button class="auto-btn" id="autoBtn" onclick="toggleAuto()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M3 12h4M12 3v4"/></svg>
+        AUTO (5x)
+      </button>
+      <button class="auto-btn" onclick="doubleBet()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        2× APOSTA
+      </button>
+      <button class="auto-btn" onclick="halfBet()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 9h6v6H9z"/></svg>
+        ½ APOSTA
+      </button>
+    </div>
+
+    <button class="spin-btn" id="spinBtn" onclick="spin()">RODAR</button>
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-n" id="statSpins">0</div>
+        <div class="stat-l">Rodadas</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n" id="statWins">0</div>
+        <div class="stat-l">Vitórias</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n" id="statBest">—</div>
+        <div class="stat-l">Melhor</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n" id="statNet" style="color:#aaa">0</div>
+        <div class="stat-l">Lucro</div>
+      </div>
+    </div>
+
+    <div class="hist-box">
+      <div class="hist-title">Minhas apostas</div>
+      <table class="hist-table"><tbody id="histBody">
+        <tr><td colspan="4" class="hist-empty">Ainda não fez apostas.</td></tr>
+      </tbody></table>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ───────────────────────────────────────────────
+//  WHEEL DATA – 3 rings (outer, mid, inner)
+// ───────────────────────────────────────────────
+const RINGS = [
+  // Outer ring – 20 segments
+  {
+    segments: [
+      {label:'x2',val:2,type:'mul',color:'#CC0000'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x0.5',val:0.5,type:'mul',color:'#222244'},
+      {label:'x2.5',val:2.5,type:'mul',color:'#CC0000'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x1.5',val:1.5,type:'mul',color:'#CC0000'},
+      {label:'x5',val:5,type:'mul',color:'#1A6FFF'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x0.5',val:0.5,type:'mul',color:'#222244'},
+      {label:'x2',val:2,type:'mul',color:'#CC0000'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x2',val:2,type:'mul',color:'#CC0000'},
+      {label:'x0.5',val:0.5,type:'mul',color:'#222244'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x3.5',val:3.5,type:'mul',color:'#CC0000'},
+      {label:'x5',val:5,type:'mul',color:'#1A6FFF'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x2',val:2,type:'mul',color:'#CC0000'},
+      {label:'x0.5',val:0.5,type:'mul',color:'#222244'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+    ],
+    rOuter: 165, rInner: 120, fontSize: 12
+  },
+  // Mid ring – 16 segments
+  {
+    segments: [
+      {label:'x4',val:4,type:'mul',color:'#CC0000'},
+      {label:'x2',val:2,type:'mul',color:'#FF6600'},
+      {label:'x0.5',val:0.5,type:'mul',color:'#222244'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x10',val:10,type:'mul',color:'#1A6FFF'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x2',val:2,type:'mul',color:'#CC0000'},
+      {label:'888\nGIFT',val:'gift',type:'gift',color:'#7B2FBE'},
+      {label:'x10',val:10,type:'mul',color:'#1A6FFF'},
+      {label:'x0.5',val:0.5,type:'mul',color:'#222244'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x24',val:24,type:'mul',color:'#1A6FFF'},
+      {label:'x0.5',val:0.5,type:'mul',color:'#222244'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'888\nGIFT',val:'gift',type:'gift',color:'#7B2FBE'},
+      {label:'x2',val:2,type:'mul',color:'#CC0000'},
+    ],
+    rOuter: 120, rInner: 80, fontSize: 11
+  },
+  // Inner ring – 12 segments
+  {
+    segments: [
+      {label:'x1',val:1,type:'mul',color:'#CC0000'},
+      {label:'x2',val:2,type:'mul',color:'#FF6600'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x4',val:4,type:'mul',color:'#CC0000'},
+      {label:'x0.5',val:0.5,type:'mul',color:'#222244'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x2',val:2,type:'mul',color:'#CC0000'},
+      {label:'888\nGIFT',val:'gift',type:'gift',color:'#7B2FBE'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+      {label:'x2',val:2,type:'mul',color:'#FF6600'},
+      {label:'x0.5',val:0.5,type:'mul',color:'#222244'},
+      {label:'TRY\nAGAIN',val:0,type:'try',color:'#FF6600'},
+    ],
+    rOuter: 80, rInner: 40, fontSize: 10
+  }
+];
+
+// Weighted result pool — RTP ~62%  (casa retém ~38% por rodada)
+// pesos ×20 para aceitar frações → pool total ~2000 entradas
+const RESULT_POOL = [];
+function buildPool(){
+  const entries = [
+    {v:0,      t:'try',  w:48},    // ~48% — zero retorno
+    {v:0.5,    t:'mul',  w:28},    // ~28% — perde metade
+    {v:1,      t:'mul',  w:9},     //  ~9% — devolução/empate
+    {v:1.5,    t:'mul',  w:5},     //  ~5% — ganho pequeno
+    {v:2,      t:'mul',  w:5},     //  ~5% — ganho razoável
+    {v:2.5,    t:'mul',  w:2},     //  ~2% — raro
+    {v:3.5,    t:'mul',  w:1},     //  ~1% — muito raro
+    {v:5,      t:'mul',  w:1},     //  ~1% — muito raro
+    {v:10,     t:'mul',  w:0.6},   // ~0.6% — quase nunca
+    {v:24,     t:'mul',  w:0.15},  // ~0.15% — ultra raro
+    {v:'gift', t:'gift', w:0.25},  // ~0.25% — ultra raro
+  ];
+  entries.forEach(e=>{
+    const times = Math.round(e.w * 20);
+    for(let i=0;i<times;i++) RESULT_POOL.push(e);
+  });
+}
+buildPool();
+
+// ───────────────────────────────────────────────
+//  STATE
+// ───────────────────────────────────────────────
+const BET_MIN    = 5;          // aposta minima (MZN)
+const BET_MAX    = 500.00;     // aposta maxima (MZN)
+const MAX_PAYOUT = 5000.00;    // premio maximo por rodada (MZN): x10, x24 e GIFT nunca pagam mais do que isto
+let balance    = 0;          // vem do Firestore (users/{uid}.saldo)
+let bet        = 10;
+let spinning   = false;
+let autoActive = false;
+let autoCount  = 0;
+const AUTO_MAX = 5;
+let statSpins  = 0;
+let statWins   = 0;
+let bestMul    = 0;
+let netProfit  = 0;
+let recentRes  = [];
+let hist       = { spins:0, wins:0, best:0, net:0 };
+let currentBetId = null;
+let roundBet   = 10;
+
+// Rotation per ring (independent)
+let ringAngles = [0, 0, 0];
+let animating  = false;
+
+// confetti particles
+let confettiParticles = [];
+let confettiAnim = null;
+
+// ───────────────────────────────────────────────
+//  CANVAS DRAW
+// ───────────────────────────────────────────────
+const canvas = document.getElementById('wheelCanvas');
+const ctx = canvas.getContext('2d');
+const CX = 165, CY = 165;
+
+function drawWheel(){
+  ctx.clearRect(0,0,330,330);
+
+  // dark bg circle
+  ctx.beginPath();
+  ctx.arc(CX,CY,166,0,Math.PI*2);
+  ctx.fillStyle='#0d0920';
+  ctx.fill();
+
+  RINGS.forEach((ring,ri)=>{
+    const n = ring.segments.length;
+    const arc = (Math.PI*2)/n;
+    const angle = ringAngles[ri];
+
+    ring.segments.forEach((seg,i)=>{
+      const start = angle + i*arc - Math.PI/2;
+      const end   = start + arc;
+      const mid   = start + arc/2;
+
+      // segment fill
+      ctx.beginPath();
+      ctx.moveTo(CX,CY);
+      ctx.arc(CX,CY,ring.rOuter,start,end);
+      ctx.closePath();
+
+      // alternating shade + segment color
+      const shade = (i%2===0) ? 1 : 0.78;
+      ctx.fillStyle = hexAlpha(seg.color, shade);
+      ctx.fill();
+
+      // border
+      ctx.strokeStyle='rgba(0,0,0,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // inner arc divider
+      ctx.beginPath();
+      ctx.arc(CX,CY,ring.rInner,start,end);
+      ctx.strokeStyle='rgba(0,0,0,0.4)';
+      ctx.lineWidth=1;
+      ctx.stroke();
+
+      // text
+      const tr = (ring.rOuter+ring.rInner)/2;
+      const tx = CX + tr*Math.cos(mid);
+      const ty = CY + tr*Math.sin(mid);
+
+      ctx.save();
+      ctx.translate(tx,ty);
+      ctx.rotate(mid + Math.PI/2);
+
+      const lines = seg.label.split('\n');
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.font=`bold ${ring.fontSize}px Rajdhani,sans-serif`;
+      ctx.fillStyle='#fff';
+      ctx.shadowColor='rgba(0,0,0,0.8)';
+      ctx.shadowBlur=3;
+
+      const lh = ring.fontSize+2;
+      lines.forEach((line,li)=>{
+        const yy = (li - (lines.length-1)/2)*lh;
+        ctx.fillText(line,0,yy);
+      });
+      ctx.restore();
+    });
+  });
+
+  // ring separators
+  [RINGS[0].rInner, RINGS[1].rInner].forEach(r=>{
+    ctx.beginPath();
+    ctx.arc(CX,CY,r,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,215,0,0.3)';
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+  });
+
+  // outer gold ring
+  ctx.beginPath();
+  ctx.arc(CX,CY,165,0,Math.PI*2);
+  ctx.strokeStyle='#B8860B';
+  ctx.lineWidth=3;
+  ctx.stroke();
+
+  // decorative dots on outer ring
+  const dotN = 36;
+  for(let d=0;d<dotN;d++){
+    const a = (d/dotN)*Math.PI*2;
+    const dx = CX + 161*Math.cos(a);
+    const dy = CY + 161*Math.sin(a);
+    ctx.beginPath();
+    ctx.arc(dx,dy, d%3===0?3:1.5, 0, Math.PI*2);
+    ctx.fillStyle = d%3===0 ? '#FFD700' : '#8a6010';
+    ctx.fill();
+  }
+}
+
+function hexAlpha(hex,alpha){
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ───────────────────────────────────────────────
+//  SPIN LOGIC  (corrigido – leitura exacta do segmento)
+// ───────────────────────────────────────────────
+
+/**
+ * Dado o ângulo actual de um anel, devolve o índice do segmento
+ * que está sob o ponteiro (topo, -π/2 no sistema canvas).
+ *
+ * drawWheel desenha cada segmento i com:
+ *   start = ringAngle + i*arc - π/2
+ *   end   = start + arc
+ * Portanto o centro do segmento i está em:
+ *   center_i = ringAngle + i*arc - π/2 + arc/2
+ *
+ * O ponteiro aponta para o ângulo 0 no eixo canvas (topo = -π/2
+ * no sistema drawWheel porque subtraímos π/2 no start).
+ * Queremos saber qual i tem o seu centro mais próximo de -π/2
+ * (no sistema "antes de subtrair π/2"), o que equivale a:
+ *   center_i_raw = ringAngle + i*arc + arc/2   →   mod 2π mais próximo de 0
+ */
+function readSegment(ringIdx){
+  const ring = RINGS[ringIdx];
+  const n    = ring.segments.length;
+  const arc  = (Math.PI * 2) / n;
+  const angle = ringAngles[ringIdx];
+
+  let best = -1, bestDist = Infinity;
+  for(let i = 0; i < n; i++){
+    // centro do segmento no sistema raw (sem -π/2)
+    let center = angle + i * arc + arc / 2;
+    // normaliza para [-π, π]
+    center = center % (Math.PI * 2);
+    if(center >  Math.PI) center -= Math.PI * 2;
+    if(center < -Math.PI) center += Math.PI * 2;
+    // distância ao topo: topo raw = 0  (pois drawWheel aplica -π/2 depois)
+    const dist = Math.abs(center);
+    if(dist < bestDist){ bestDist = dist; best = i; }
+  }
+  return best;
+}
+
+/**
+ * Calcula o ângulo final do anel para que o segmento desejado
+ * fique exactamente sob o ponteiro, depois de pelo menos
+ * `minFullTurns` rotações completas a partir de `currentAngle`.
+ */
+function angleForSegment(ringIdx, segIdx, minFullTurns){
+  const ring = RINGS[ringIdx];
+  const n    = ring.segments.length;
+  const arc  = (Math.PI * 2) / n;
+
+  // Queremos:  angle + segIdx*arc + arc/2  ≡  0  (mod 2π)
+  // → angle = -(segIdx*arc + arc/2)  mod 2π
+  let baseAngle = -(segIdx * arc + arc / 2);
+  baseAngle = ((baseAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+
+  // Garante que giramos para a frente pelo menos minFullTurns
+  const current = ((ringAngles[ringIdx] % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+  let target = baseAngle;
+  while(target <= current + minFullTurns * Math.PI * 2){
+    target += Math.PI * 2;
+  }
+  // offset acumulado (mantém a rotação "absoluta" sem normalizar em cada frame)
+  return ringAngles[ringIdx] + (target - current);
+}
+
+async function spin(){
+  if(spinning) return;
+  if(!window.Banca || !Banca.pronto){ showToast('A carregar dados... aguarde.'); return; }
+  if(bet > BET_MAX){ bet = BET_MAX; document.getElementById('betVal').textContent = bet; showToast('Aposta máxima: ' + BET_MAX.toFixed(2) + ' MZN'); stopAutoPlay(); return; }
+  if(balance < bet){ showToast('Saldo insuficiente!'); stopAutoPlay(); return; }
+
+  spinning = true;
+  document.getElementById('spinBtn').disabled = true;
+
+  // cria a aposta e desconta o saldo no Firebase (mesma operação)
+  roundBet = bet;
+  try{
+    currentBetId = await Banca.abrir(roundBet);
+  }catch(e){
+    spinning = false;
+    document.getElementById('spinBtn').disabled = false;
+    showToast(Banca.erro(e));
+    stopAutoPlay();
+    return;
+  }
+
+  // ── 1. Escolher resultado pelo pool ponderado ──
+  const resultEntry = RESULT_POOL[Math.floor(Math.random() * RESULT_POOL.length)];
+
+  // ── 2. Encontrar um segmento no anel externo (ring 0) que corresponde ──
+  const outerSegs = RINGS[0].segments;
+  const candidates = outerSegs.reduce((acc, s, i) => {
+    if(s.val === resultEntry.v && s.type === resultEntry.t) acc.push(i);
+    return acc;
+  }, []);
+  // se não houver correspondência exacta, escolher qualquer índice aleatório
+  const chosenIdx = candidates.length > 0
+    ? candidates[Math.floor(Math.random() * candidates.length)]
+    : Math.floor(Math.random() * outerSegs.length);
+
+  // ── 3. Calcular ângulos finais para cada anel ──
+  //   Anel 0 (outer): alinha com o resultado escolhido (mín. 5 voltas)
+  //   Anéis 1 e 2: giram de forma independente (decorativo)
+  const minTurns = 5 + Math.floor(Math.random() * 3);
+  const finalAngles = [
+    angleForSegment(0, chosenIdx, minTurns),
+    ringAngles[1] + Math.PI*2 * (minTurns + 1 + Math.random()*2),
+    ringAngles[2] + Math.PI*2 * (minTurns + 1 + Math.random()*2),
+  ];
+
+  // ── 4. Animação ──
+  const duration    = 4200 + Math.random() * 1200;
+  const startTime   = performance.now();
+  const startAngles = [...ringAngles];
+
+  function easeOut(t){ return 1 - Math.pow(1 - t, 4); }
+
+  function animate(now){
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const e = easeOut(t);
+    for(let ri = 0; ri < 3; ri++){
+      ringAngles[ri] = startAngles[ri] + (finalAngles[ri] - startAngles[ri]) * e;
+    }
+    drawWheel();
+    if(t < 1){
+      requestAnimationFrame(animate);
+    } else {
+      // ── 5. Normaliza ângulos e LÊ o segmento real que ficou no ponteiro ──
+      for(let ri = 0; ri < 3; ri++){
+        ringAngles[ri] = ((ringAngles[ri] % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+      }
+      drawWheel();
+
+      const realIdx = readSegment(0);
+      const realSeg = RINGS[0].segments[realIdx];
+
+      // Processa usando o segmento que REALMENTE parou no ponteiro
+      processResult({ v: realSeg.val, t: realSeg.type }).finally(()=>{
+        spinning = false;
+        document.getElementById('spinBtn').disabled = false;
+      });
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+async function processResult(entry){
+  const multEl = document.getElementById('multDisplay');
+  const id = currentBetId, stake = roundBet;
+
+  // multiplicador final desta rodada
+  let mult = 0, label = 'TRY AGAIN';
+  if(entry.t === 'gift'){ mult = 3 + Math.floor(Math.random() * 6); label = 'GIFT'; }   // 3x a 8x
+  else if(entry.t === 'mul'){ mult = entry.v; label = 'x' + entry.v; }
+  let ganho = Math.round(stake * mult * 100) / 100;
+  let capped = false;
+  if(ganho > MAX_PAYOUT){ ganho = MAX_PAYOUT; mult = Math.round(MAX_PAYOUT / stake * 100) / 100; capped = true; }
+
+  // grava o resultado e credita o prémio (tudo no Firebase)
+  try{
+    await Banca.fechar(id, stake, mult, ganho, label);
+  }catch(e){
+    showToast('Erro ao registar o resultado: ' + Banca.erro(e));
+    stopAutoPlay();
+    return;
+  }
+
+  if(capped) showToast('Prémio limitado ao máximo de ' + MAX_PAYOUT.toFixed(2) + ' MZN por rodada');
+
+  if(entry.t === 'try'){
+    multEl.textContent = 'TRY AGAIN';
+    multEl.style.color = '#FF4444';
+    showToast('Sem sorte desta vez...');
+
+  } else if(entry.t === 'gift'){
+    multEl.textContent = '888 GIFT';
+    multEl.style.color = '#CC77FF';
+    showWin('888 GIFT', ganho);
+
+  } else {
+    const v = entry.v;
+    multEl.style.color = v >= 2 ? '#FFD700' : v === 1 ? '#aaaaaa' : '#FF6644';
+    multEl.textContent = 'x' + v;
+    if(v >= 1.5){
+      showWin('x' + v, ganho);
+    } else if(v === 1){
+      showToast('Aposta devolvida — empate');
+    } else {
+      showToast('x0.5 — perdeu ' + (stake * 0.5).toFixed(2) + ' MZN');
+    }
+  }
+
+  // auto play
+  if(autoActive){
+    autoCount++;
+    if(autoCount < AUTO_MAX){
+      setTimeout(()=>spin(), 1200);
+    } else {
+      stopAutoPlay();
+      showToast('Auto-jogo terminado');
+    }
+  }
+}
+
+function stopAutoPlay(){
+  autoActive = false; autoCount = 0;
+  const b = document.getElementById('autoBtn');
+  if(b) b.classList.remove('active');
+}
+
+// ───────────────────────────────────────────────
+//  UI helpers
+// ───────────────────────────────────────────────
+function updateBalance(){
+  document.getElementById('balanceDisplay').textContent=balance.toFixed(2);
+}
+
+function changeBet(delta){
+  bet = Math.max(BET_MIN, Math.min(BET_MAX, bet+delta));
+  document.getElementById('betVal').textContent=bet;
+}
+
+function setQuickBet(v){
+  bet=Math.max(BET_MIN, Math.min(BET_MAX, v));
+  document.getElementById('betVal').textContent=bet;
+}
+
+function doubleBet(){ changeBet(bet); }
+function halfBet(){ bet=Math.max(BET_MIN,Math.floor(bet/2)); document.getElementById('betVal').textContent=bet; }
+
+function toggleAuto(){
+  autoActive=!autoActive;
+  autoCount=0;
+  const btn=document.getElementById('autoBtn');
+  if(autoActive){ btn.classList.add('active'); showToast('Auto-jogo activado (5x)'); }
+  else { btn.classList.remove('active'); showToast('Auto-jogo desactivado'); }
+}
+
+function updateStats(){
+  document.getElementById('statSpins').textContent = hist.spins;
+  document.getElementById('statWins').textContent  = hist.wins;
+  document.getElementById('statBest').textContent  = hist.best > 0 ? 'x' + hist.best : '—';
+  const netEl = document.getElementById('statNet');
+  netEl.textContent = (hist.net >= 0 ? '+' : '') + hist.net.toFixed(0);
+  netEl.style.color = hist.net >= 0 ? '#00B843' : '#FF4444';
+}
+
+/* ── Dados vindos do Firebase (chamados pelo módulo Banca) ── */
+function setBalance(v){ balance = Number(v) || 0; updateBalance(); }
+function setUser(nome, uid){
+  document.getElementById('userName').textContent = nome || 'Jogador';
+  document.getElementById('userId').textContent   = 'ID: ' + String(uid || '').substring(0, 6).toUpperCase();
+}
+function setHistory(list){
+  const closed = list.filter(b => b.estado === 'ganha' || b.estado === 'perdida');
+  hist.spins = closed.length;
+  hist.wins  = closed.filter(b => Number(b.multiplicador) >= 1.5).length;
+  hist.best  = closed.reduce((m,b) => Math.max(m, Number(b.multiplicador) || 0), 0);
+  hist.net   = closed.reduce((n,b) => n + (Number(b.ganho) || 0) - (Number(b.valor) || 0), 0);
+
+  recentRes = closed.slice(0,10).map(b => {
+    const m = Number(b.multiplicador) || 0;
+    const gift = b.resultado === 'GIFT';
+    return {
+      label: gift ? 'GIFT' : (m === 0 ? 'TRY\nAGAIN' : 'x' + m),
+      cat:   gift ? 'gift' : m >= 10 ? 'great' : m >= 5 ? 'good' : m >= 1.5 ? 'mid' : 'low'
+    };
+  });
+  renderRecent();
+  updateStats();
+
+  const tb = document.getElementById('histBody');
+  tb.replaceChildren();
+  if(!list.length){
+    const tr = document.createElement('tr'), td = document.createElement('td');
+    td.colSpan = 4; td.className = 'hist-empty'; td.textContent = 'Ainda não fez apostas.';
+    tr.appendChild(td); tb.appendChild(tr); return;
+  }
+  list.slice(0,10).forEach(b => {
+    const tr = document.createElement('tr');
+    const when = (b.criadoEm && b.criadoEm.toDate)
+      ? b.criadoEm.toDate().toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : 'agora';
+    const m = Number(b.multiplicador) || 0;
+    let res, cls = '';
+    if(b.estado === 'aberta'){ res = 'Em jogo'; }
+    else if(b.estado === 'cancelada'){ res = 'Cancelada'; }
+    else if(b.resultado === 'GIFT'){ res = 'GIFT x' + m; cls = 'hist-win'; }
+    else { res = m === 0 ? 'TRY AGAIN' : 'x' + m; cls = m >= 1 ? 'hist-win' : 'hist-loss'; }
+    const net = (Number(b.ganho) || 0) - (Number(b.valor) || 0);
+    const netTxt = (b.estado === 'ganha' || b.estado === 'perdida')
+      ? (net >= 0 ? '+' : '') + net.toFixed(2) : '—';
+    [[when,''],[(Number(b.valor)||0).toFixed(2)+' MZN',''],[res,cls],[netTxt, net >= 0 ? 'hist-win' : 'hist-loss']].forEach(c => {
+      const td = document.createElement('td'); td.textContent = c[0]; if(c[1]) td.className = c[1]; tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+}
+
+// recent results
+function addRecent(label, cat){
+  recentRes.unshift({label,cat});
+  if(recentRes.length>10) recentRes.pop();
+  renderRecent();
+}
+
+function renderRecent(){
+  const row=document.getElementById('recentRow');
+  row.innerHTML=recentRes.map(r=>`
+    <div class="rr-badge ${r.cat}">${r.label.replace('\n','<br>')}</div>
+  `).join('');
+}
+
+// toast
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// WIN overlay + confetti
+function showWin(label, amount){
+  document.getElementById('winAmount').textContent=label;
+  document.getElementById('winSub').textContent='+'+amount.toFixed(2)+' MZN';
+  document.getElementById('winOverlay').classList.add('show');
+  startConfetti();
+}
+
+function closeWin(){
+  document.getElementById('winOverlay').classList.remove('show');
+  stopConfetti();
+}
+
+// ── confetti ──
+function startConfetti(){
+  const cv=document.getElementById('confettiCanvas');
+  cv.width=window.innerWidth; cv.height=window.innerHeight;
+  const cc=cv.getContext('2d');
+  const colors=['#FFD700','#FF6600','#CC0000','#1A6FFF','#7B2FBE','#00B843','#fff'];
+  confettiParticles=[];
+  for(let i=0;i<120;i++){
+    confettiParticles.push({
+      x:Math.random()*cv.width, y:-10-Math.random()*200,
+      w:6+Math.random()*8, h:4+Math.random()*5,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      r:Math.random()*Math.PI*2,
+      dr:(Math.random()-0.5)*0.15,
+      vy:3+Math.random()*4, vx:(Math.random()-0.5)*3,
+    });
+  }
+  function loop(){
+    cc.clearRect(0,0,cv.width,cv.height);
+    confettiParticles.forEach(p=>{
+      p.y+=p.vy; p.x+=p.vx; p.r+=p.dr;
+      cc.save(); cc.translate(p.x,p.y); cc.rotate(p.r);
+      cc.fillStyle=p.color;
+      cc.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      cc.restore();
+    });
+    confettiParticles=confettiParticles.filter(p=>p.y<cv.height+20);
+    if(confettiParticles.length>0) confettiAnim=requestAnimationFrame(loop);
+    else cc.clearRect(0,0,cv.width,cv.height);
+  }
+  if(confettiAnim) cancelAnimationFrame(confettiAnim);
+  confettiAnim=requestAnimationFrame(loop);
+}
+
+function stopConfetti(){
+  if(confettiAnim) cancelAnimationFrame(confettiAnim);
+  const cv=document.getElementById('confettiCanvas');
+  cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+}
+
+// ── multiplier display pop ──
+let lastMul='';
+const observer=new MutationObserver(()=>{
+  const el=document.getElementById('multDisplay');
+  el.classList.remove('pop');
+  void el.offsetWidth;
+  el.classList.add('pop');
+});
+observer.observe(document.getElementById('multDisplay'),{childList:true,subtree:true,characterData:true});
+
+// ───────────────────────────────────────────────
+//  INIT
+// ───────────────────────────────────────────────
+drawWheel();
+updateStats();
+</script>
+
+<!-- ═══════════ FIREBASE: saldo, nome, apostas e histórico ═══════════ -->
+<script type="module">
+import { auth, db } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { doc, collection, onSnapshot, writeBatch, increment, serverTimestamp, query, where }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const GAME_ID = 'roleta';
+let user = null, userData = null, userOk = false, betsOk = false;
+
+const B = window.Banca = { pronto: false };
+function pronto(){ if(userOk && betsOk) B.pronto = true; }
+
+B.erro = function(e){
+  console.error('Firebase:', e && e.code, e && e.message);
+  return (e && e.code === 'permission-denied')
+    ? 'Recusado pelo Firebase. Verifique as regras do Firestore.'
+    : 'Erro de ligação. Tente novamente.';
+};
+
+/* Aposta: cria a aposta e DESCONTA o saldo na mesma operação */
+B.abrir = async function(valor){
+  const ref = doc(collection(db, 'bets')), b = writeBatch(db);
+  b.set(ref, { uid: user.uid, nome: (userData && userData.nome) || '', jogo: GAME_ID,
+               valor: valor, estado: 'aberta', criadoEm: serverTimestamp() });
+  b.update(doc(db, 'users', user.uid), { saldo: increment(-valor) });
+  await b.commit();
+  return ref.id;
+};
+
+/* Resultado: fecha a aposta e, se houver prémio, CREDITA o saldo */
+B.fechar = async function(id, valor, mult, ganho, label){
+  const b = writeBatch(db);
+  if(ganho > 0){
+    b.update(doc(db, 'bets', id), { estado: 'ganha', multiplicador: mult, ganho: ganho,
+                                    resultado: label, fechadaEm: serverTimestamp() });
+    b.update(doc(db, 'users', user.uid), { saldo: increment(ganho), ultimaApostaId: id });
+  } else {
+    b.update(doc(db, 'bets', id), { estado: 'perdida', multiplicador: 0, ganho: 0,
+                                    resultado: label, fechadaEm: serverTimestamp() });
+  }
+  await b.commit();
+};
+
+onAuthStateChanged(auth, function(u){
+  if(!u){ location.replace('index.html'); return; }
+  user = u;
+
+  /* nome e saldo em tempo real */
+  onSnapshot(doc(db, 'users', u.uid), function(snap){
+    if(!snap.exists()) return;
+    userData = snap.data();
+    setUser(userData.nome, u.uid);
+    setBalance(userData.saldo);
+    userOk = true; pronto();
+  }, function(e){ showToast(B.erro(e)); });
+
+  /* histórico das minhas apostas na roleta */
+  let primeira = true;
+  onSnapshot(query(collection(db, 'bets'), where('uid', '==', u.uid), where('jogo', '==', GAME_ID)),
+    function(snap){
+      const list = snap.docs.map(d => Object.assign({ id: d.id }, d.data()))
+        .sort((a,b) => ((b.criadoEm && b.criadoEm.seconds) || 9e12) - ((a.criadoEm && a.criadoEm.seconds) || 9e12));
+      setHistory(list);
+
+      /* apostas que ficaram abertas (página fechada a meio da rodada) contam como perdidas */
+      if(primeira){
+        list.filter(x => x.estado === 'aberta').forEach(x => {
+          const b = writeBatch(db);
+          b.update(doc(db, 'bets', x.id), { estado: 'perdida', multiplicador: 0, ganho: 0,
+                                            resultado: 'TRY AGAIN', fechadaEm: serverTimestamp() });
+          b.commit().catch(e => console.error('limpeza:', e && e.code));
+        });
+        primeira = false;
+      }
+      betsOk = true; pronto();
+    }, function(e){ console.error('bets:', e && e.code); betsOk = true; pronto(); });
+});
+</script>
+</body>
+</html>

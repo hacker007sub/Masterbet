@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MasterBet Double — Carregando</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --fire1:#ff6a00;
+  --fire2:#ff3d00;
+  --fire3:#ff0000;
+  --gold:#ffd000;
+  --gold2:#ffaa00;
+  --ember:#ff8c00;
+  --dark:#080400;
+  --dark2:#0f0800;
+  --white:#fff;
+  --dim:rgba(255,255,255,0.6);
+  --glow-fire:rgba(255,106,0,0.7);
+  --glow-gold:rgba(255,208,0,0.6);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:var(--dark);font-family:'Rajdhani',sans-serif;color:var(--white);}
+
+/* ─── CANVAS BG ─── */
+#bgCanvas{position:fixed;inset:0;z-index:0;}
+
+/* ─── SMOKE / HEAT DISTORTION ─── */
+.heat{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 90%, rgba(255,80,0,0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 100% 60% at 50% 100%, rgba(255,30,0,0.12) 0%, transparent 60%);
+  animation:heatPulse 3s ease-in-out infinite;
+}
+@keyframes heatPulse{0%,100%{opacity:0.7}50%{opacity:1}}
+
+/* ─── VIGNETTE ─── */
+.vignette{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 25%, rgba(8,4,0,0.85) 100%);
+}
+
+/* ─── SCANLINES ─── */
+.scan{
+  position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.18;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.4) 3px,rgba(0,0,0,0.4) 4px);
+}
+
+/* ─── MAIN LAYOUT ─── */
+.wrap{
+  position:relative;z-index:10;
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:20px;
+}
+
+/* ─── CARD ─── */
+.card{
+  width:min(520px,100%);
+  position:relative;
+  background:linear-gradient(160deg,rgba(20,8,0,0.97),rgba(10,4,0,0.99));
+  border:1px solid rgba(255,106,0,0.35);
+  border-radius:16px;
+  padding:52px 44px 40px;
+  overflow:hidden;
+  box-shadow:
+    0 0 0 1px rgba(255,106,0,0.08),
+    0 0 80px rgba(255,80,0,0.25),
+    0 60px 120px rgba(0,0,0,0.9);
+  animation:cardIn 0.9s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(50px) scale(0.95)}to{opacity:1;transform:none}}
+
+/* Top fire bar */
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--fire3),var(--fire1),var(--gold),var(--fire1),var(--fire3),transparent);
+  box-shadow:0 0 24px var(--glow-fire),0 0 50px rgba(255,80,0,0.4);
+  animation:fireLine 2s ease-in-out infinite;
+}
+@keyframes fireLine{0%,100%{opacity:0.9;filter:brightness(1)}50%{opacity:1;filter:brightness(1.4)}}
+
+/* Brackets — fire style */
+.brk{position:absolute;width:28px;height:28px;border-color:var(--fire1);}
+.tl{top:14px;left:14px;border-top:2px solid;border-left:2px solid;}
+.tr{top:14px;right:14px;border-top:2px solid;border-right:2px solid;}
+.bl{bottom:14px;left:14px;border-bottom:2px solid;border-left:2px solid;}
+.br{bottom:14px;right:14px;border-bottom:2px solid;border-right:2px solid;}
+
+/* ─── FIREBALL HERO ─── */
+.hero{
+  display:flex;flex-direction:column;align-items:center;
+  margin-bottom:36px;
+  animation:fadeUp 0.8s 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+
+.fireball-wrap{
+  position:relative;width:110px;height:110px;
+  margin:0 auto 20px;
+}
+
+/* Outer glow rings */
+.fb-ring{
+  position:absolute;border-radius:50%;border:2px solid rgba(255,106,0,0.4);
+  animation:ringExpand 2.5s ease-out infinite;
+}
+.fb-ring:nth-child(1){inset:-10px;animation-delay:0s;}
+.fb-ring:nth-child(2){inset:-22px;animation-delay:0.5s;border-color:rgba(255,60,0,0.25);}
+.fb-ring:nth-child(3){inset:-36px;animation-delay:1s;border-color:rgba(255,30,0,0.12);}
+@keyframes ringExpand{
+  0%{transform:scale(0.85);opacity:0}
+  30%{opacity:1}
+  100%{transform:scale(1.15);opacity:0}
+}
+
+/* Ball base */
+.fb-ball{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 38% 35%, #fff8e0 0%, var(--gold) 18%, var(--fire1) 45%, var(--fire2) 65%, var(--fire3) 80%, #660000 100%);
+  box-shadow:
+    0 0 30px var(--fire1),
+    0 0 60px rgba(255,60,0,0.6),
+    0 0 100px rgba(255,30,0,0.35),
+    inset 0 0 20px rgba(255,180,0,0.3);
+  animation:ballPulse 1.8s ease-in-out infinite;
+}
+@keyframes ballPulse{
+  0%,100%{transform:scale(1);box-shadow:0 0 30px var(--fire1),0 0 60px rgba(255,60,0,0.6),0 0 100px rgba(255,30,0,0.35)}
+  50%{transform:scale(1.06);box-shadow:0 0 50px var(--fire1),0 0 90px rgba(255,60,0,0.8),0 0 140px rgba(255,30,0,0.5)}
+}
+
+/* Flame tongues on top */
+.flame{
+  position:absolute;bottom:62%;left:50%;
+  transform-origin:bottom center;
+  border-radius:50% 50% 20% 20%;
+  animation:flameWave 0.9s ease-in-out infinite alternate;
+}
+.f1{
+  width:18px;height:38px;margin-left:-9px;
+  background:linear-gradient(to top, var(--fire1), var(--gold), rgba(255,255,200,0.9));
+  filter:blur(2px);
+  animation-delay:0s;
+}
+.f2{
+  width:12px;height:28px;margin-left:12px;
+  background:linear-gradient(to top, var(--fire2), var(--fire1), var(--gold));
+  filter:blur(1.5px);
+  animation-delay:0.2s;
+}
+.f3{
+  width:12px;height:26px;margin-left:-26px;
+  background:linear-gradient(to top, var(--fire2), var(--fire1), rgba(255,200,0,0.8));
+  filter:blur(1.5px);
+  animation-delay:0.35s;
+}
+.f4{
+  width:8px;height:20px;margin-left:26px;
+  background:linear-gradient(to top, var(--fire1), var(--gold));
+  filter:blur(1px);
+  animation-delay:0.15s;
+}
+.f5{
+  width:8px;height:18px;margin-left:-38px;
+  background:linear-gradient(to top, var(--fire2), var(--fire1));
+  filter:blur(1px);
+  animation-delay:0.4s;
+}
+@keyframes flameWave{
+  0%{transform:scaleX(1) scaleY(1) rotate(-3deg)}
+  100%{transform:scaleX(0.85) scaleY(1.15) rotate(3deg)}
+}
+
+/* Sparks */
+.spark{
+  position:absolute;border-radius:50%;
+  background:var(--gold);
+  pointer-events:none;
+  animation:sparkFly 1.4s ease-out infinite;
+}
+.spark:nth-child(1){width:4px;height:4px;left:45%;top:10%;animation-delay:0s;}
+.spark:nth-child(2){width:3px;height:3px;left:70%;top:25%;animation-delay:0.3s;}
+.spark:nth-child(3){width:5px;height:5px;left:20%;top:20%;animation-delay:0.6s;}
+.spark:nth-child(4){width:3px;height:3px;left:80%;top:50%;animation-delay:0.9s;}
+.spark:nth-child(5){width:4px;height:4px;left:10%;top:55%;animation-delay:1.1s;}
+.spark:nth-child(6){width:2px;height:2px;left:60%;top:5%;animation-delay:0.45s;}
+@keyframes sparkFly{
+  0%{transform:translate(0,0) scale(1);opacity:1}
+  100%{transform:translate(var(--sx,10px),var(--sy,-40px)) scale(0);opacity:0}
+}
+.spark:nth-child(1){--sx:12px;--sy:-45px}
+.spark:nth-child(2){--sx:20px;--sy:-35px;background:var(--fire1)}
+.spark:nth-child(3){--sx:-18px;--sy:-38px}
+.spark:nth-child(4){--sx:25px;--sy:-20px;background:var(--ember)}
+.spark:nth-child(5){--sx:-22px;--sy:-28px;background:var(--fire1)}
+.spark:nth-child(6){--sx:8px;--sy:-50px}
+
+/* Roulette ring around ball */
+.roulette-ring{
+  position:absolute;inset:-18px;border-radius:50%;
+  border:2px solid rgba(255,180,0,0.2);
+  animation:rouletteSpin 4s linear infinite;
+}
+.roulette-ring::before{
+  content:'';position:absolute;top:-4px;left:50%;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--gold);
+  box-shadow:0 0 10px var(--gold-glow);
+  transform:translateX(-50%);
+}
+.roulette-ring::after{
+  content:'';position:absolute;bottom:-4px;right:20%;
+  width:5px;height:5px;border-radius:50%;
+  background:var(--fire1);
+  box-shadow:0 0 6px var(--glow-fire);
+}
+@keyframes rouletteSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* ─── TITLE ─── */
+.game-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(48px,10vw,66px);
+  letter-spacing:0.12em;
+  line-height:1;
+  background:linear-gradient(135deg,#fff8d0,var(--gold),var(--fire1),var(--fire2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(255,150,0,0.6));
+  margin-bottom:6px;
+  animation:titleGlow 2s ease-in-out infinite;
+}
+@keyframes titleGlow{
+  0%,100%{filter:drop-shadow(0 0 20px rgba(255,150,0,0.5))}
+  50%{filter:drop-shadow(0 0 35px rgba(255,150,0,0.9)) drop-shadow(0 0 60px rgba(255,80,0,0.5))}
+}
+.game-sub{
+  font-size:12px;letter-spacing:0.3em;text-transform:uppercase;
+  color:rgba(255,180,0,0.55);font-weight:400;
+}
+
+/* ─── ROULETTE INDICATOR ─── */
+.roulette-strip{
+  display:flex;justify-content:center;align-items:center;gap:10px;
+  margin-bottom:32px;
+  animation:fadeUp 0.8s 0.6s cubic-bezier(0.16,1,0.3,1) both;
+}
+.r-seg{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:16px;
+  border:2px solid rgba(255,255,255,0.1);
+  transition:all 0.3s;
+  animation:segSpin 0.5s ease-in-out;
+}
+.r-seg.red{background:rgba(200,0,20,0.7);color:#fff;border-color:rgba(255,60,60,0.5);box-shadow:0 0 14px rgba(200,0,20,0.5);}
+.r-seg.black{background:rgba(20,20,20,0.9);color:#ccc;border-color:rgba(100,100,100,0.3);}
+.r-seg.green{background:rgba(0,140,20,0.8);color:#fff;border-color:rgba(0,200,60,0.5);box-shadow:0 0 14px rgba(0,180,40,0.5);}
+@keyframes segSpin{from{transform:rotateY(90deg);opacity:0}to{transform:rotateY(0);opacity:1}}
+
+/* ─── PROGRESS ─── */
+.prog-section{
+  margin-bottom:28px;
+  animation:fadeUp 0.8s 0.55s cubic-bezier(0.16,1,0.3,1) both;
+}
+.status-txt{
+  text-align:center;font-size:14px;color:var(--dim);
+  margin-bottom:14px;letter-spacing:0.05em;font-weight:400;
+}
+.dot{display:inline-block;animation:dotB 1.4s ease-in-out infinite;}
+.dot:nth-child(1){animation-delay:0s}.dot:nth-child(2){animation-delay:0.2s}.dot:nth-child(3){animation-delay:0.4s}
+@keyframes dotB{0%,100%{opacity:0.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+
+.prog-outer{
+  width:100%;height:10px;
+  background:rgba(255,106,0,0.08);
+  border:1px solid rgba(255,106,0,0.2);
+  border-radius:5px;overflow:hidden;
+  box-shadow:inset 0 2px 8px rgba(0,0,0,0.5);
+  position:relative;
+}
+.prog-inner{
+  height:100%;width:0;border-radius:5px;
+  background:linear-gradient(90deg,#660000,var(--fire3),var(--fire1),var(--gold),#fff8c0);
+  box-shadow:0 0 20px var(--glow-fire),0 0 8px var(--gold);
+  position:relative;
+  transition:width 0.1s;
+}
+.prog-inner::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent);
+  animation:shimmer 1.2s ease-in-out infinite;
+}
+@keyframes shimmer{0%{transform:translateX(-150%)}100%{transform:translateX(200%)}}
+.prog-pct{
+  text-align:center;margin-top:10px;
+  font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.12em;
+  color:var(--fire1);
+  text-shadow:0 0 16px var(--glow-fire),0 0 30px rgba(255,100,0,0.4);
+}
+
+/* ─── STATS ─── */
+.stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  margin-bottom:26px;
+  animation:fadeUp 0.8s 0.75s cubic-bezier(0.16,1,0.3,1) both;
+}
+.sbox{
+  background:rgba(255,80,0,0.06);
+  border:1px solid rgba(255,106,0,0.15);
+  border-radius:8px;padding:12px 8px;text-align:center;
+  transition:all 0.3s;
+}
+.sbox:hover{background:rgba(255,80,0,0.12);border-color:rgba(255,106,0,0.35);transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,80,0,0.15);}
+.slabel{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,180,0,0.45);margin-bottom:5px;}
+.sval{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.06em;color:var(--fire1);text-shadow:0 0 10px var(--glow-fire);}
+
+/* ─── STEPS ─── */
+.steps-list{
+  margin-bottom:24px;
+  animation:fadeUp 0.8s 0.9s cubic-bezier(0.16,1,0.3,1) both;
+}
+.step{
+  display:flex;align-items:center;gap:12px;
+  padding:9px 14px;margin-bottom:7px;
+  background:rgba(255,80,0,0.04);
+  border-left:2px solid transparent;
+  border-radius:5px;
+  font-size:12px;color:var(--dim);
+  transition:all 0.4s;opacity:0.45;
+}
+.step.active{opacity:1;border-left-color:var(--fire1);background:rgba(255,80,0,0.1);}
+.step.done{opacity:0.55;border-left-color:rgba(80,255,120,0.5);}
+.step-icon{
+  width:20px;height:20px;flex-shrink:0;border-radius:50%;
+  border:2px solid rgba(255,106,0,0.3);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;font-size:10px;
+}
+.step.active .step-icon{border-color:var(--fire1);box-shadow:0 0 14px var(--glow-fire);}
+.step.active .step-icon::before{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  border:2px solid var(--fire1);
+  animation:pingF 1.5s ease-out infinite;
+}
+@keyframes pingF{0%{transform:scale(1);opacity:1}100%{transform:scale(1.9);opacity:0}}
+.step.done .step-icon{border-color:rgba(80,255,120,0.6);}
+.step.done .step-icon::after{content:'✓';font-size:10px;color:rgba(80,255,120,0.9);font-weight:700;}
+.step-spinner{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--fire1);
+  animation:spinF 0.7s linear infinite;display:none;
+}
+.step.active .step-spinner{display:block;}
+@keyframes spinF{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* ─── FOOTER ─── */
+.footer{
+  text-align:center;
+  animation:fadeUp 0.8s 1.1s cubic-bezier(0.16,1,0.3,1) both;
+}
+.ftxt{font-size:11px;color:rgba(255,255,255,0.28);letter-spacing:0.08em;margin-bottom:6px;}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:4px;
+  background:rgba(255,180,0,0.06);
+  border:1px solid rgba(255,180,0,0.18);
+  font-size:9px;letter-spacing:0.14em;text-transform:uppercase;
+  color:rgba(255,180,0,0.75);
+}
+
+/* ─── COMPLETE OVERLAY ─── */
+.complete{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(8,4,0,0.97);
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(10px);
+}
+.complete.show{display:flex;animation:cIn 0.4s ease;}
+@keyframes cIn{from{opacity:0}to{opacity:1}}
+.c-content{text-align:center;animation:cScale 0.6s cubic-bezier(0.16,1,0.3,1) both;}
+@keyframes cScale{from{opacity:0;transform:scale(0.88)}to{opacity:1;transform:none}}
+.c-icon{
+  width:90px;height:90px;margin:0 auto 20px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#fff5c0,var(--gold) 30%,var(--fire1) 60%,var(--fire3) 90%);
+  border:3px solid var(--fire1);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 50px var(--glow-fire),0 0 100px rgba(255,80,0,0.3);
+  animation:cIconPulse 1.5s ease-in-out infinite;
+  font-size:38px;
+}
+@keyframes cIconPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.c-title{
+  font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:0.1em;
+  background:linear-gradient(135deg,#fff8d0,var(--gold),var(--fire1));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(255,150,0,0.7));
+  margin-bottom:10px;
+}
+.c-sub{font-size:14px;color:var(--dim);letter-spacing:0.06em;}
+
+/* ─── TRANSITION ─── */
+.tx-overlay{position:fixed;inset:0;z-index:200;display:none;pointer-events:none;}
+.tx-overlay.show{display:block;}
+.tx-flash{position:absolute;inset:0;opacity:0;background:radial-gradient(circle at center,rgba(255,200,0,0.95),rgba(255,80,0,0.7) 40%,transparent 70%);}
+.tx-ring{position:absolute;top:50%;left:50%;border-radius:50%;transform:translate(-50%,-50%) scale(0);opacity:0;}
+.tx-curtain{position:absolute;inset:0;opacity:0;background:var(--dark);clip-path:circle(0% at 50% 50%);}
+.tx-ember{position:absolute;border-radius:50%;pointer-events:none;animation:emberRise 1s ease-out forwards;}
+@keyframes emberRise{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--ex),var(--ey)) scale(0);opacity:0}}
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<div class="heat"></div>
+<div class="vignette"></div>
+<div class="scan"></div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="brk tl"></div><div class="brk tr"></div>
+    <div class="brk bl"></div><div class="brk br"></div>
+
+    <!-- HERO FIREBALL -->
+    <div class="hero">
+      <div class="fireball-wrap">
+        <div class="fb-ring"></div>
+        <div class="fb-ring"></div>
+        <div class="fb-ring"></div>
+        <div class="roulette-ring"></div>
+        <div class="fb-ball"></div>
+        <div class="flame f1"></div>
+        <div class="flame f2"></div>
+        <div class="flame f3"></div>
+        <div class="flame f4"></div>
+        <div class="flame f5"></div>
+        <div class="spark"></div>
+        <div class="spark"></div>
+        <div class="spark"></div>
+        <div class="spark"></div>
+        <div class="spark"></div>
+        <div class="spark"></div>
+      </div>
+      <h1 class="game-title">DOUBLE</h1>
+      <p class="game-sub">MasterBet Casino</p>
+    </div>
+
+    <!-- ROULETTE STRIP -->
+    <div class="roulette-strip" id="rouletteStrip">
+      <div class="r-seg red">7</div>
+      <div class="r-seg black">3</div>
+      <div class="r-seg red">12</div>
+      <div class="r-seg green">0</div>
+      <div class="r-seg black">9</div>
+      <div class="r-seg red">5</div>
+      <div class="r-seg black">14</div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="prog-section">
+      <div class="status-txt" id="statusTxt">
+        A inicializar jogo<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+      </div>
+      <div class="prog-outer">
+        <div class="prog-inner" id="progBar"></div>
+      </div>
+      <div class="prog-pct" id="progPct">0%</div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="sbox">
+        <div class="slabel">Rodadas</div>
+        <div class="sval" id="statRounds">0</div>
+      </div>
+      <div class="sbox">
+        <div class="slabel">Mult. Máx.</div>
+        <div class="sval" id="statMult">2x</div>
+      </div>
+      <div class="sbox">
+        <div class="slabel">Jackpot</div>
+        <div class="sval" id="statJack">R$0</div>
+      </div>
+    </div>
+
+    <!-- STEPS -->
+    <div class="steps-list" id="stepsList">
+      <div class="step" data-s="0"><div class="step-icon"><div class="step-spinner"></div></div><div>A conectar ao servidor de roleta...</div></div>
+      <div class="step" data-s="1"><div class="step-icon"><div class="step-spinner"></div></div><div>A embaralhar números de 0 a 14...</div></div>
+      <div class="step" data-s="2"><div class="step-icon"><div class="step-spinner"></div></div><div>A verificar histórico de resultados...</div></div>
+      <div class="step" data-s="3"><div class="step-icon"><div class="step-spinner"></div></div><div>A configurar multiplicadores...</div></div>
+      <div class="step" data-s="4"><div class="step-icon"><div class="step-spinner"></div></div><div>A carregar saldo e apostas...</div></div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <div class="ftxt">MasterBet Casino — Jogo Responsável +18</div>
+      <div class="badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Provably Fair
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLETE -->
+<div class="complete" id="completeOv">
+  <div class="c-content">
+    <div class="c-icon">🔥</div>
+    <div class="c-title">DOUBLE PRONTO</div>
+    <div class="c-sub">A redirecionar para a roleta...</div>
+  </div>
+</div>
+
+<!-- TRANSITION FX -->
+<div class="tx-overlay" id="txOv">
+  <div class="tx-flash" id="txFlash"></div>
+  <div class="tx-ring" id="txR1"></div>
+  <div class="tx-ring" id="txR2"></div>
+  <div class="tx-ring" id="txR3"></div>
+  <div class="tx-curtain" id="txCurtain"></div>
+</div>
+
+<script>
+/* ═══ CANVAS FIRE PARTICLES ═══ */
+(function(){
+  const c=document.getElementById('bgCanvas'),ctx=c.getContext('2d');
+  let W,H;
+  const resize=()=>{W=c.width=innerWidth;H=c.height=innerHeight;};
+  resize();addEventListener('resize',resize);
+
+  const particles=[];
+  const COLS=['rgba(255,106,0,','rgba(255,60,0,','rgba(255,208,0,','rgba(255,30,0,'];
+
+  class P{
+    constructor(){this.reset(true);}
+    reset(init){
+      this.x=Math.random()*W;
+      this.y=init?Math.random()*H:H+10;
+      this.r=Math.random()*2.5+0.5;
+      this.vy=-(Math.random()*1.2+0.3);
+      this.vx=(Math.random()-0.5)*0.4;
+      this.alpha=Math.random()*0.5+0.1;
+      this.life=0;
+      this.maxLife=100+Math.random()*200;
+      this.col=COLS[Math.floor(Math.random()*COLS.length)];
+    }
+    update(){
+      this.x+=this.vx;this.y+=this.vy;this.life++;
+      if(this.life>this.maxLife||this.y<-10)this.reset(false);
+    }
+    draw(){
+      const a=Math.sin((this.life/this.maxLife)*Math.PI)*this.alpha;
+      ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fillStyle=this.col+a+')';ctx.fill();
+    }
+  }
+  for(let i=0;i<120;i++)particles.push(new P());
+
+  // Ember lines
+  class Line{
+    constructor(){this.reset(true);}
+    reset(init){
+      this.x=Math.random()*W;
+      this.y=init?Math.random()*H:H;
+      this.len=Math.random()*60+20;
+      this.vy=-(Math.random()*2+1);
+      this.alpha=Math.random()*0.12+0.03;
+      this.life=0;this.maxLife=80+Math.random()*120;
+    }
+    update(){this.y+=this.vy;this.life++;if(this.life>this.maxLife)this.reset(false);}
+    draw(){
+      const a=Math.sin((this.life/this.maxLife)*Math.PI)*this.alpha;
+      ctx.beginPath();ctx.moveTo(this.x,this.y);ctx.lineTo(this.x,this.y+this.len);
+      ctx.strokeStyle=`rgba(255,140,0,${a})`;ctx.lineWidth=0.5;ctx.stroke();
+    }
+  }
+  const lines=[];
+  for(let i=0;i<25;i++)lines.push(new Line());
+
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+    lines.forEach(l=>{l.update();l.draw();});
+    particles.forEach(p=>{p.update();p.draw();});
+
+    // connection glows near bottom
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<Math.min(i+8,particles.length);j++){
+        const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<70){
+          ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle=`rgba(255,80,0,${0.06*(1-d/70)})`;ctx.lineWidth=0.5;ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* ═══ ROULETTE STRIP ANIMATION ═══ */
+const nums=[
+  {n:0,c:'green'},{n:1,c:'red'},{n:2,c:'black'},{n:3,c:'red'},{n:4,c:'black'},
+  {n:5,c:'red'},{n:6,c:'black'},{n:7,c:'red'},{n:8,c:'black'},{n:9,c:'red'},
+  {n:10,c:'black'},{n:11,c:'black'},{n:12,c:'red'},{n:13,c:'black'},{n:14,c:'red'}
+];
+const strip=document.getElementById('rouletteStrip');
+function spinStrip(){
+  const segs=strip.querySelectorAll('.r-seg');
+  const picks=[];
+  for(let i=0;i<7;i++){
+    const p=nums[Math.floor(Math.random()*nums.length)];
+    picks.push(p);
+  }
+  segs.forEach((s,i)=>{
+    setTimeout(()=>{
+      s.style.animation='none';
+      s.offsetHeight;
+      s.style.animation='segSpin 0.4s ease-in-out';
+      s.className='r-seg '+picks[i].c;
+      s.textContent=picks[i].n;
+    },i*80);
+  });
+}
+setInterval(spinStrip,2200);
+
+/* ═══ STATS COUNTERS ═══ */
+let rounds=0,jack=1000;
+const rEl=document.getElementById('statRounds');
+const mEl=document.getElementById('statMult');
+const jEl=document.getElementById('statJack');
+const multOpts=['2x','3x','14x'];
+setInterval(()=>{
+  rounds+=Math.floor(Math.random()*50+20);
+  rEl.textContent=rounds;
+  mEl.textContent=multOpts[Math.floor(Math.random()*multOpts.length)];
+  jack+=Math.floor(Math.random()*500+100);
+  jEl.textContent='R$'+jack.toLocaleString('pt-BR');
+},600);
+
+/* ═══ STEPS ═══ */
+const stepDefs=[
+  {text:'A conectar ao servidor de roleta...',dur:800},
+  {text:'A embaralhar números de 0 a 14...',dur:950},
+  {text:'A verificar histórico de resultados...',dur:700},
+  {text:'A configurar multiplicadores...',dur:850},
+  {text:'A carregar saldo e apostas...',dur:650}
+];
+const stepEls=document.querySelectorAll('.step');
+const statusTxt=document.getElementById('statusTxt');
+const progBar=document.getElementById('progBar');
+const progPct=document.getElementById('progPct');
+const completeOv=document.getElementById('completeOv');
+let curStep=0;
+
+function runStep(i){
+  if(i>=stepDefs.length){
+    setTimeout(()=>{
+      completeOv.classList.add('show');
+      setTimeout(epicTransition,1800);
+    },300);
+    return;
+  }
+  stepEls[i].classList.add('active');
+  const dots='<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>';
+  statusTxt.innerHTML=stepDefs[i].text+dots;
+  setTimeout(()=>{
+    stepEls[i].classList.remove('active');
+    stepEls[i].classList.add('done');
+    curStep++;runStep(curStep);
+  },stepDefs[i].dur);
+}
+setTimeout(()=>runStep(0),900);
+
+/* Progress bar */
+let prog=0,progT=0;
+setInterval(()=>{
+  if(prog<100){
+    progT=Math.min(100,progT+Math.random()*7);
+    prog+=(progT-prog)*0.18;
+    progBar.style.width=prog+'%';
+    progPct.textContent=Math.floor(prog)+'%';
+  }
+},100);
+
+/* ═══ EPIC FIRE TRANSITION ═══ */
+function epicTransition(){
+  const ov=document.getElementById('txOv');
+  const flash=document.getElementById('txFlash');
+  const r1=document.getElementById('txR1');
+  const r2=document.getElementById('txR2');
+  const r3=document.getElementById('txR3');
+  const curtain=document.getElementById('txCurtain');
+
+  ov.style.display='block';
+  ov.style.pointerEvents='all';
+
+  const cx=innerWidth/2,cy=innerHeight/2;
+  const maxR=Math.sqrt(cx*cx+cy*cy)*2.4;
+
+  [r1,r2,r3].forEach(r=>{
+    r.style.width=maxR+'px';r.style.height=maxR+'px';
+    r.style.border='3px solid';
+  });
+
+  // Spawn embers
+  for(let i=0;i<30;i++){
+    setTimeout(()=>{
+      const e=document.createElement('div');
+      e.className='tx-ember';
+      const ang=Math.random()*Math.PI*2;
+      const dist=80+Math.random()*200;
+      e.style.cssText=`
+        width:${4+Math.random()*6}px;height:${4+Math.random()*6}px;
+        left:${cx}px;top:${cy}px;
+        background:${Math.random()>0.5?'#ffd000':'#ff6a00'};
+        box-shadow:0 0 8px currentColor;
+        --ex:${Math.cos(ang)*dist}px;--ey:${Math.sin(ang)*dist}px;
+        animation-duration:${0.6+Math.random()*0.8}s;
+      `;
+      ov.appendChild(e);
+      setTimeout(()=>e.remove(),1500);
+    },i*30);
+  }
+
+  // Flash
+  flash.style.transition='opacity 0.1s ease-out';
+  flash.style.opacity='1';
+
+  setTimeout(()=>{
+    flash.style.transition='opacity 0.5s ease-in';
+    flash.style.opacity='0';
+
+    function fireRing(el,delay,col){
+      setTimeout(()=>{
+        el.style.borderColor=col;
+        el.style.boxShadow=`0 0 30px ${col}`;
+        el.style.transition='transform 0.8s cubic-bezier(0.1,0,0.6,1),opacity 0.8s ease-out';
+        el.style.transform='translate(-50%,-50%) scale(1)';
+        el.style.opacity='1';
+        setTimeout(()=>{
+          el.style.transition='transform 1.1s cubic-bezier(0.1,0,0.3,1),opacity 0.9s ease-in';
+          el.style.transform='translate(-50%,-50%) scale(3.2)';
+          el.style.opacity='0';
+        },60);
+      },delay);
+    }
+    fireRing(r1,0,'rgba(255,208,0,0.9)');
+    fireRing(r2,150,'rgba(255,106,0,0.75)');
+    fireRing(r3,300,'rgba(255,30,0,0.5)');
+  },100);
+
+  // Fireball curtain — circle expand
+  setTimeout(()=>{
+    curtain.style.opacity='1';
+    curtain.style.transition='clip-path 0.75s cubic-bezier(0.4,0,0.2,1)';
+    curtain.style.clipPath='circle(8% at 50% 50%)';
+    setTimeout(()=>{
+      curtain.style.transition='clip-path 0.55s cubic-bezier(0.4,0,0.2,1)';
+      curtain.style.clipPath='circle(150% at 50% 50%)';
+    },500);
+  },550);
+
+  // Second flash + redirect
+  setTimeout(()=>{
+    flash.style.transition='opacity 0.08s';
+    flash.style.opacity='0.9';
+    setTimeout(()=>{
+      flash.style.transition='opacity 0.3s';
+      flash.style.opacity='0';
+      window.location.href='double.html';
+    },80);
+  },1400);
+}
+</script>
+</body>
+</html>

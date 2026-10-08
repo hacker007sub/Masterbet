@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Criar administrador</title>
+  <style>
+    body { margin: 0 auto; padding: 20px; font-family: system-ui, sans-serif; background: #07090c; color: #f1f5f9; max-width: 380px; }
+    input, button { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; font-size: 1rem; border: 1px solid rgba(255,255,255,.15); }
+    input { background: #0e1218; color: #f1f5f9; }
+    button { background: #10b981; color: #fff; font-weight: 700; border: 0; cursor: pointer; }
+    button:disabled { opacity: .5; }
+    #msg { margin-top: 12px; word-break: break-word; }
+    .muted { color: #94a3b8; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <h2>Criar administrador</h2>
+  <p class="muted">Uso único. Depois apague este ficheiro e a linha extra das regras.</p>
+  <input id="phone" type="tel" inputmode="numeric" maxlength="9" placeholder="Telemóvel (9 dígitos)">
+  <input id="nome" type="text" placeholder="Nome (ex.: Admin)">
+  <input id="pass" type="password" autocapitalize="none" autocorrect="off" placeholder="Palavra-passe (mín. 8 caracteres)">
+  <button id="go">Criar admin</button>
+  <div id="msg"></div>
+  <p class="muted" id="email-info"></p>
+
+  <script type="module">
+    const msg = (t) => { document.getElementById('msg').textContent = t; };
+    try {
+      const { auth, db } = await import('./firebase.js');
+      const A = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+      const F = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+
+      const phoneEl = document.getElementById('phone');
+      phoneEl.addEventListener('input', () => {
+        document.getElementById('email-info').textContent = /^\d{9}$/.test(phoneEl.value)
+          ? 'E-mail a pôr nas regras: 258' + phoneEl.value + '@users.masterbet.example' : '';
+      });
+
+      document.getElementById('go').addEventListener('click', async () => {
+        const phone = phoneEl.value.trim();
+        const nome = document.getElementById('nome').value.trim() || 'Admin';
+        const pass = document.getElementById('pass').value;
+        if (!/^\d{9}$/.test(phone)) return msg('Número inválido (9 dígitos).');
+        if (pass.length < 8) return msg('A palavra-passe precisa de pelo menos 8 caracteres.');
+
+        const btn = document.getElementById('go'); btn.disabled = true; msg('A trabalhar...');
+        const email = `258${phone}@users.masterbet.example`;
+        try {
+          let cred;
+          try {
+            cred = await A.createUserWithEmailAndPassword(auth, email, pass);
+          } catch (e) {
+            if (e.code !== 'auth/email-already-in-use') throw e;
+            cred = await A.signInWithEmailAndPassword(auth, email, pass); // conta já existe: entra
+          }
+          const ref = F.doc(db, 'users', cred.user.uid);
+          const snap = await F.getDoc(ref);
+          if (snap.exists()) await F.updateDoc(ref, { tipo: 'admin' });
+          else await F.setDoc(ref, { tipo: 'admin', saldo: 0, nome, telefone: phone, criadoEm: F.serverTimestamp() });
+          msg('Feito! Admin criado. Agora abra admin.html e entre com ' + phone + '. Depois apague este ficheiro.');
+        } catch (e) {
+          msg('Erro: ' + (e.code || e.message) + (e.code === 'permission-denied' ? ' — a linha das regras não foi publicada, ou o e-mail nas regras não é igual ao mostrado acima.' : '') + (e.code === 'auth/invalid-credential' ? ' — esse número já existe com outra palavra-passe. Use outro número.' : ''));
+        } finally { btn.disabled = false; }
+      });
+    } catch (e) { msg('Erro ao carregar: ' + (e.message || e)); }
+  </script>
+</body>
+</html>
